@@ -2,9 +2,11 @@
   "version": 2,
   "name": "charter-wfm-project-hub",
   "builds": [
-    { "src": "index.html", "use": "@vercel/static" }
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "GDWorkshops.html", "use": "@vercel/static" }
   ],
   "routes": [
+    { "src": "/GDWorkshops.html", "dest": "/GDWorkshops.html" },
     { "src": "/(.*)", "dest": "/index.html" }
   ],
   "headers": [
