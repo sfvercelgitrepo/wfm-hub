@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WFM Salesforce Transformation Global Design</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #17324d;
+      --muted: #5f7388;
+      --line: #d7dee8;
+      --accent: #1f3a5f;
+      --fs: #1E88E5;
+      --mnt: #8E24AA;
+      --con: #FDD835;
+      --tech: #000000;
+      --all: #475569;
+      --shadow: 0 10px 28px rgba(20, 42, 67, 0.08);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, Arial, Helvetica, sans-serif;
+    }
+    .page {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #1f3a5f 0%, #274d78 100%);
+      color: white;
+      border-radius: 22px;
+      padding: 28px 30px 24px;
+      box-shadow: var(--shadow);
+    }
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.8;
+      margin-bottom: 10px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 34px;
+      line-height: 1.15;
+    }
+    .subtitle {
+      margin-top: 10px;
+      max-width: 980px;
+      font-size: 15px;
+      line-height: 1.5;
+      color: rgba(255,255,255,0.88);
+    }
+
+    .panel {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+      margin-top: 18px;
+    }
+    .legend-wrap {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    .legend-title, .uploader-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+    }
+    .legend-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fbfcfe;
+      font-size: 14px;
+    }
+    .swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      flex: 0 0 12px;
+    }
+    .sw-fs { background: var(--fs); }
+    .sw-mnt { background: var(--mnt); }
+    .sw-con { background: var(--con); }
+    .sw-tech { background: var(--tech); }
+
+    .upload-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    .upload-row input[type=file] {
+      max-width: 100%;
+    }
+    .upload-note {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1.4fr 0.9fr;
+      gap: 16px;
+      align-items: stretch;
+      margin-top: 18px;
+    }
+    .filter-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .filter-btn {
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+    .filter-btn:hover {
+      transform: translateY(-1px);
+    }
+    .filter-btn.active {
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.10);
+    }
+    .active-all { background: var(--all); }
+    .active-fs { background: var(--fs); }
+    .active-mnt { background: var(--mnt); }
+    .active-con { background: var(--con); }
+    .active-tech { background: var(--tech); }
+
+    .month-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      background: white;
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      box-shadow: var(--shadow);
+    }
+    .nav-btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 10px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .month-label {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+    .kpi {
+      background: white;
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      min-height: 108px;
+    }
+    .kpi-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .kpi-value {
+      margin-top: 10px;
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .kpi-sub {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .calendar-card {
+      background: white;
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      margin-top: 18px;
+      overflow: hidden;
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+    }
+    .weekday {
+      background: #eef3f8;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 12px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .weekday:last-child { border-right: none; }
+    .day-cell {
+      min-height: 165px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 10px 12px;
+      position: relative;
+      background: #fff;
+    }
+    .day-cell:nth-child(5n) { border-right: none; }
+    .day-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .day-name {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .day-date {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .day-total {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #eef3f8;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .outside {
+      background: #fafbfc;
+      color: #98a6b6;
+    }
+    .todayish {
+      outline: 2px solid #b7c9dc;
+      outline-offset: -2px;
+    }
+    .pills {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-top: 8px;
+    }
+    .pill {
+      padding: 9px 10px;
+      border-radius: 12px;
+      color: white;
+      font-size: 12px;
+      line-height: 1.35;
+      font-weight: 700;
+      cursor: pointer;
+      position: relative;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+    }
+    .pill small {
+      display: block;
+      margin-top: 3px;
+      color: rgba(255,255,255,0.86);
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .pill.fs { background: #1E88E5; background: #1E88E5; }
+    .pill.mnt { background: #8E24AA; background: #8E24AA; }
+    .pill.con { background: #FDD835; color: #000; }
+    .pill.con small { color: #000; }
+    .pill.tech small { color: #fff !important; } background: #FDD835; }
+    .pill.tech { background: #000000 !important; color: #fff !important; } background: #000000; }
+
+    .tooltip {
+      position: fixed;
+      max-width: 320px;
+      background: #102235;
+      color: white;
+      padding: 12px 14px;
+      border-radius: 12px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.25);
+      font-size: 12px;
+      line-height: 1.4;
+      z-index: 9999;
+      pointer-events: auto;
+      display: none;
+      word-wrap: break-word;
+      white-space: normal;
+    }
+    .tooltip::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: 20px;
+      width: 10px;
+      height: 10px;
+      background: #102235;
+      transform: rotate(45deg);
+    }
+    .tooltip strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+    .tooltip .meta {
+      color: rgba(255,255,255,0.78);
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+    .empty-state {
+      padding: 34px 22px 40px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 15px;
+    }
+    .footer-note {
+      margin-top: 14px;
+      font-size: 12px;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    @media (max-width: 1180px) {
+      .controls, .legend-wrap { grid-template-columns: 1fr; }
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 760px) {
+      .page { padding: 14px; }
+      h1 { font-size: 28px; }
+      .month-label { font-size: 18px; }
+      .kpis { grid-template-columns: 1fr; }
+      .calendar-grid { grid-template-columns: 1fr; }
+      .weekday { display: none; }
+      .day-cell { border-right: none; min-height: 120px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+        <div>
+            <div class="eyebrow">Global Design Program</div>
+            <h1>WFM Salesforce Transformation Global Design</h1>
+            <div class="subtitle">
+                Proposed 17-week workshop approach to define the future-state operating model, business processes,
+                technical architecture, and Salesforce solution design across Field Service, Maintenance, Construction,
+                and supporting Technical workstreams.
+            </div>
+        </div>
+        <img src="https://corporate.charter.com/static/d617519f6e8ec1333149b2e86dd914fb/58aae/Charter_Communications_Logo_Preview_0.jpg" style="height:60px; object-fit:contain; background:white; padding:8px 12px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+    </div>
+
+      
+    </section>
+    <div style="margin-top:10px; font-size:12px; color: rgba(255,255,255,0.9);">
+      * Workshops are subject to rescheduling based on stakeholder availability.
+    </div>
+
+
+    <section class="panel legend-wrap">
+      <div>
+        <div class="legend-title">Workshop locations</div>
+        <div class="legend-list">
+          <div class="legend-item"><span class="swatch sw-fs"></span><strong>Field Service:</strong> Tampa, FL</div>
+          <div class="legend-item"><span class="swatch sw-mnt"></span><strong>Maintenance:</strong> Rochester, NY</div>
+          <div class="legend-item"><span class="swatch sw-con"></span><strong>Construction:</strong> Denver, CO</div>
+          <div class="legend-item"><span class="swatch sw-tech"></span><strong>Technical:</strong> Virtual / cross-program</div>
+        </div>
+      </div>
+      <div>
+        <div class="uploader-title">Refresh the schedule from a file</div>
+        <div class="upload-row">
+          <input id="fileInput" type="file" accept=".csv,.xlsx,.xls" />
+        </div>
+        <div class="upload-note">
+          Upload a refreshed workshop list in CSV or Excel format using the same column structure as the current schedule.
+          The page will immediately rebuild the calendar, filters, and hour totals from the uploaded file.
+        </div>
+      </div>
+    </section>
+
+    <section class="controls">
+      <div class="panel">
+        <div class="legend-title">Filter by business unit</div>
+        <div class="filter-group" id="filters"></div>
+      </div>
+      <div class="month-nav">
+        <button class="nav-btn" id="prevBtn">← Previous month</button>
+        <div class="month-label" id="monthLabel"></div>
+        <button class="nav-btn" id="nextBtn">Next month →</button>
+      </div>
+    </section>
+
+    <section class="kpis">
+      <div class="kpi">
+        <div class="kpi-label">Hours in selected month</div>
+        <div class="kpi-value" id="monthHours">0</div>
+        <div class="kpi-sub" id="monthHoursSub">Across visible workshops in this month.</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Hours across 17 weeks</div>
+        <div class="kpi-value" id="totalHours">0</div>
+        <div class="kpi-sub" id="totalHoursSub">Across all visible workshops in the program.</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Workshops in selected month</div>
+        <div class="kpi-value" id="monthCount">0</div>
+        <div class="kpi-sub">Count of visible workshop sessions in the selected month.</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Visible business unit</div>
+        <div class="kpi-value" id="currentFilterLabel">All</div>
+        <div class="kpi-sub" id="currentFilterSub">Showing all business and technical workshops.</div>
+      </div>
+    </section>
+
+    <section class="calendar-card">
+      <div class="calendar-grid" id="weekdayHeader"></div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+      <div class="empty-state" id="emptyState" style="display:none;">No workshops match the selected filter for this month.</div>
+    </section>
+
+    <div class="footer-note">Week 1 starts on May 11, 2026. Business-day calendar view shows Monday through Friday only.</div>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    const DEFAULT_DATA = [{"Week": 1, "Day": "Tuesday", "Workshop Topic": "WFM Persona Definition", "Phase of Engagement": "Validate Current State", "Nature (Business or Technical)": "Business", "Objective": "Define the future-state Field Service personas required for the Salesforce transformation and map them to current Charter roles, responsibilities, decisions, and system touchpoints across scheduling, routing, dispatch, supervision, and field execution.", "Estimated Time": "2 hours", "Business Unit": "Field Service"}, {"Week": 1, "Day": "Wednesday", "Workshop Topic": "Current-State Processes", "Phase of Engagement": "Validate Current State", "Nature (Business or Technical)": "Business", "Objective": "Validate the current-state Field Service operating model end to end, including how trouble calls, positive work, disconnects, and SROs are created, planned, assigned, dispatched, and completed today, to establish the baseline for future-state Salesforce design.", "Estimated Time": "3 hours", "Business Unit": "Field Service"}, {"Week": 1, "Day": "Wednesday", "Workshop Topic": "Resource Management", "Phase of Engagement": "Validate Current State", "Nature (Business or Technical)": "Business", "Objective": "Define the future-state Field Service resource management model in Salesforce, including service resources, territories, appointments, shifts, skills, crews, locations, work orders, and maintenance plan dependencies needed to support high-volume customer service operations.", "Estimated Time": "3 hours", "Business Unit": "Field Service"}, {"Week": 1, "Day": "Thursday", "Workshop Topic": "Work Order Lifecycle Framework", "Phase of Engagement": "Validate Current State", "Nature (Business or Technical)": "Business", "Objective": "Establish the end-to-end Field Service work order lifecycle that will be used throughout the design phase, including key statuses, handoffs, exceptions, and customer-impacting milestones that Salesforce must support.", "Estimated Time": "1 hour", "Business Unit": "Field Service"}, {"Week": 1, "Day": "Friday", "Workshop Topic": "Current and Future-State Architecture", "Phase of Engagement": "Validate Current State", "Nature (Business or Technical)": "Technical", "Objective": "Review the current application landscape, confirm which systems will integrate with Salesforce, and map business capabilities to the applications that perform them today vs. in the future.", "Estimated Time": "2 hours", "Business Unit": "Technical"}, {"Week": 2, "Day": "Tuesday", "Workshop Topic": "WFM Persona Definition", "Phase of Engagement": "Validate Current State", "Nature (Business or Technical)": "Business", "Objective": "Define the future-state Maintenance personas required for the Salesforce transformation and map them to current Charter roles, responsibilities, decisions, and system touchpoints across planning, outage coordination, crew management, dispatch, and execution.", "Estimated Time": "2 hours", "Business Unit": "Maintenance"}, {"Week": 2, "Day": "Wednesday", "Workshop Topic": "Current-State Processes", "Phase of Engagement": "Validate Current State", "Nature (Business or Technical)": "Business", "Objective": "Validate the current-state Maintenance operating model end to end, including how planned and unplanned outages, impairments, and related work are identified, prioritized, scheduled, assigned, and completed today, to inform future-state Salesforce design.", "Estimated Time": "3 hours", "Business Unit": "Maintenance"}, {"Week": 2, "Day": "Wednesday", "Workshop Topic": "Resource Management", "Phase of Engagement": "Validate Current State", "Nature (Business or Technical)": "Business", "Objective": "Define the future-state Maintenance resource management model in Salesforce, including specialized resources, territories, appointments, shifts, skills, crews, locations, work orders, and maintenance-plan-driven work needed to support both planned and reactive operations.", "Estimated Time": "3 hours", "Business Unit": "Maintenance"}, {"Week": 2, "Day": "Thursday", "Workshop Topic": "Work Order Lifecycle Framework", "Phase of Engagement": "Validate Current State", "Nature (Business or Technical)": "Business", "Objective": "Establish the end-to-end Maintenance work order lifecycle that will be used throughout the design phase, including planning, dispatch, execution, restoration, and closure stages that Salesforce must support.", "Estimated Time": "1 hour", "Business Unit": "Maintenance"}, {"Week": 2, "Day": "Friday", "Workshop Topic": "Data Model Target State", "Phase of Engagement": "Validate Current State", "Nature (Business or Technical)": "Technical", "Objective": "Review the target data model and define how core future-state objects such as work orders, appointments, resources, territories, and skills should relate to one another.", "Estimated Time": "2 hours", "Business Unit": "Technical"}, {"Week": 3, "Day": "Tuesday", "Workshop Topic": "WFM Persona Definition", "Phase of Engagement": "Validate Current State", "Nature (Business or Technical)": "Business", "Objective": "Define the future-state Construction personas required for the Salesforce transformation and map them to current Charter roles, responsibilities, decisions, and system touchpoints across planning, coordination, surveying, field execution, and contractor management.", "Estimated Time": "2 hours", "Business Unit": "Construction"}, {"Week": 3, "Day": "Wednesday", "Workshop Topic": "Current-State Processes", "Phase of Engagement": "Validate Current State", "Nature (Business or Technical)": "Business", "Objective": "Validate the current-state Construction operating model end to end, including how desktop surveys, onsite surveys, and downstream field activities are initiated, coordinated, scheduled, and completed today, to inform future-state Salesforce design.", "Estimated Time": "3 hours", "Business Unit": "Construction"}, {"Week": 3, "Day": "Wednesday", "Workshop Topic": "Resource Management", "Phase of Engagement": "Validate Current State", "Nature (Business or Technical)": "Business", "Objective": "Define the future-state Construction resource management model in Salesforce, including crews, contractors, territories, appointments, shifts, skills, locations, and work order structures needed to support project-based and dependency-driven work.", "Estimated Time": "3 hours", "Business Unit": "Construction"}, {"Week": 3, "Day": "Thursday", "Workshop Topic": "Work Order Lifecycle Framework", "Phase of Engagement": "Validate Current State", "Nature (Business or Technical)": "Business", "Objective": "Establish the end-to-end Construction work order lifecycle that will be used throughout the design phase, including intake, survey, execution, dependency, and closure stages that Salesforce must support.", "Estimated Time": "1 hour", "Business Unit": "Construction"}, {"Week": 3, "Day": "Friday", "Workshop Topic": "Master Data Inventory", "Phase of Engagement": "Validate Current State", "Nature (Business or Technical)": "Technical", "Objective": "Create the master data inventory for the transformation, identify data sources, and collect extracts that will support design and early Salesforce setup.", "Estimated Time": "4 hours", "Business Unit": "Technical"}, {"Week": 4, "Day": "Tuesday", "Workshop Topic": "Work Order - Initiation", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Design how Field Service work enters Salesforce WFM, including source systems, job type classification, work sizing, required intake data, and orchestration needs for trouble calls, positive work, disconnects, and SROs.", "Estimated Time": "4 hours", "Business Unit": "Field Service"}, {"Week": 4, "Day": "Wednesday", "Workshop Topic": "Work Order - Assignment & Dispatch", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Design the future-state Field Service assignment and dispatch model in Salesforce, including automated versus manual decisions, coordinator and dispatcher roles, technician eligibility, priority handling, and operational handoffs for customer-facing work.", "Estimated Time": "4 hours", "Business Unit": "Field Service"}, {"Week": 4, "Day": "Thursday", "Workshop Topic": "Work Order - Execution & Closure", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Define how Field Service work will be executed and closed in Salesforce, including technician status progression, TechMobile interactions, field updates, completion outcomes, and closure requirements for customer-facing jobs.", "Estimated Time": "2 hours", "Business Unit": "Field Service"}, {"Week": 4, "Day": "Friday", "Workshop Topic": "Biller Integration", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define how Salesforce will integrate with Biller as a source of Field Service work orders and certain work for other BUs.", "Estimated Time": "4 hours", "Business Unit": "Technical"}, {"Week": 5, "Day": "Tuesday", "Workshop Topic": "Work Order - Initiation", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Design how Maintenance work enters Salesforce WFM, including source systems, work type classification, prioritization, work sizing, and intake requirements for planned outages, unplanned outages, and impairments.", "Estimated Time": "4 hours", "Business Unit": "Maintenance"}, {"Week": 5, "Day": "Wednesday", "Workshop Topic": "Work Order - Assignment & Dispatch", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Design the future-state Maintenance assignment and dispatch model in Salesforce, including crew selection, priority-based dispatching, outage-driven work allocation, manual intervention points, and coordination across planned and reactive maintenance activities.", "Estimated Time": "4 hours", "Business Unit": "Maintenance"}, {"Week": 5, "Day": "Thursday", "Workshop Topic": "Work Order - Execution & Closure", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Define how Maintenance work will be executed and closed in Salesforce, including field status progression, restoration updates, coordination with mobile tools, work completion criteria, and closeout requirements for planned and reactive jobs.", "Estimated Time": "2 hours", "Business Unit": "Maintenance"}, {"Week": 5, "Day": "Friday", "Workshop Topic": "PeakView (ForecastView / AppointmentView / PTOView) Integration", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define the integrations required between Salesforce and the PeakView applications, including forecasting, appointment management, and PTO-related functions.", "Estimated Time": "3 hours", "Business Unit": "Technical"}, {"Week": 5, "Day": "Friday", "Workshop Topic": "PeakView Data Conversion", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define which data from PeakView must be converted, such as quota-related information and existing PTO or exception requests.", "Estimated Time": "3 hours", "Business Unit": "Technical"}, {"Week": 6, "Day": "Tuesday", "Workshop Topic": "Work Order - Initiation", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Design how Construction work enters Salesforce WFM, including source systems, work type classification, work sizing, intake requirements, and orchestration needs for desktop and onsite surveys and related downstream field activities.", "Estimated Time": "4 hours", "Business Unit": "Construction"}, {"Week": 6, "Day": "Wednesday", "Workshop Topic": "Work Order - Assignment & Dispatch", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Design the future-state Construction assignment and dispatch model in Salesforce, including resource selection, sequencing, dependency-driven assignment, contractor considerations, and operational handoffs across survey and field execution activities.", "Estimated Time": "4 hours", "Business Unit": "Construction"}, {"Week": 6, "Day": "Thursday", "Workshop Topic": "Work Order - Execution & Closure", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Define how Construction work will be executed and closed in Salesforce, including field status progression, survey outputs, mobile interactions, dependency tracking, and completion criteria for project-oriented activities.", "Estimated Time": "2 hours", "Business Unit": "Construction"}, {"Week": 6, "Day": "Friday", "Workshop Topic": "Lighthouse Integration", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define how Salesforce will integrate with Lighthouse as the source of Maintenance work orders and priority updates.", "Estimated Time": "4 hours", "Business Unit": "Technical"}, {"Week": 7, "Day": "Tuesday", "Workshop Topic": "Routing and Optimization", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Design the Field Service routing and optimization model in Salesforce, including objectives, policy priorities, technician matching rules, reoptimization behavior, travel considerations, and exception handling for high-volume customer appointments.", "Estimated Time": "4 hours", "Business Unit": "Field Service"}, {"Week": 7, "Day": "Wednesday", "Workshop Topic": "Quota", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Define how Field Service quota will be managed in Salesforce, including booking capacity, work type allocation, slot visibility, in-day adjustments, and the relationship between customer appointment commitments and operational capacity.", "Estimated Time": "4 hours", "Business Unit": "Field Service"}, {"Week": 7, "Day": "Thursday", "Workshop Topic": "Capacity", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Define how Field Service capacity will be modeled and managed in Salesforce, including labor availability, flexible work boundaries, work type allocation, and operational rules needed to balance demand, service levels, and technician productivity.", "Estimated Time": "2 hours", "Business Unit": "Field Service"}, {"Week": 6, "Day": "Friday", "Workshop Topic": "Lighthouse Data Conversion", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define which Lighthouse data must be converted or loaded to Salesforce, including in-flight maintenance work and technician-related data needed at cutover.", "Estimated Time": "2 hours", "Business Unit": "Technical"}, {"Week": 7, "Day": "Friday", "Workshop Topic": "PRISM Data Conversion", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define which PRISM data must be converted or loaded to Salesforce, such as coordinator-related data and open construction work context needed at cutover.", "Estimated Time": "2 hours", "Business Unit": "Technical"}, {"Week": 7, "Day": "Friday", "Workshop Topic": "PRISM Integration", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define how Salesforce will integrate with PRISM as the source of Construction surveys and related project work.", "Estimated Time": "4 hours", "Business Unit": "Technical"}, {"Week": 8, "Day": "Tuesday", "Workshop Topic": "Routing and Optimization", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Design the Maintenance routing and optimization model in Salesforce, including objectives, priority rules, reoptimization behavior, territory considerations, and balancing of planned work with unplanned outage and impairment response.", "Estimated Time": "4 hours", "Business Unit": "Maintenance"}, {"Week": 8, "Day": "Wednesday", "Workshop Topic": "Quota", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Define how Maintenance quota will be managed in Salesforce, including reservation of capacity for planned work, reactive work protections, visibility into available slots, and adjustment rules for changing outage and impairment conditions.", "Estimated Time": "4 hours", "Business Unit": "Maintenance"}, {"Week": 8, "Day": "Thursday", "Workshop Topic": "Capacity", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Define how Maintenance capacity will be modeled and managed in Salesforce, including crew availability, protected capacity, flexible work boundaries, and allocation across planned maintenance, outages, and impairment response.", "Estimated Time": "2 hours", "Business Unit": "Maintenance"}, {"Week": 8, "Day": "Friday", "Workshop Topic": "TechMobile Integration", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define how Salesforce and TechMobile will exchange status changes, work updates, and execution-related information.", "Estimated Time": "4 hours", "Business Unit": "Technical"}, {"Week": 8, "Day": "Friday", "Workshop Topic": "Verizon Reveal Integration", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define how Salesforce will receive and use GPS/location data from Verizon Reveal.", "Estimated Time": "2 hours", "Business Unit": "Technical"}, {"Week": 9, "Day": "Tuesday", "Workshop Topic": "Routing and Optimization", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Design the Construction routing and optimization approach in Salesforce, including sequencing logic, territory and travel considerations, dependency-driven scheduling, and optimization rules appropriate for survey and project-based field work.", "Estimated Time": "4 hours", "Business Unit": "Construction"}, {"Week": 9, "Day": "Wednesday", "Workshop Topic": "Quota", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Define how Construction quota will be managed in Salesforce, including capacity reservation by work type, slot governance, dependency impacts, and visibility into available survey and field execution capacity.", "Estimated Time": "4 hours", "Business Unit": "Construction"}, {"Week": 9, "Day": "Thursday", "Workshop Topic": "Capacity", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Define how Construction capacity will be modeled and managed in Salesforce, including crew and contractor availability, flexible boundaries, work type allocation, and capacity rules needed to support project-driven execution.", "Estimated Time": "2 hours", "Business Unit": "Construction"}, {"Week": 9, "Day": "Friday", "Workshop Topic": "FSM Data Conversion", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define the full data conversion scope from FSM to Salesforce, including in-flight work, worker profiles, skills, shifts, assignments, and routing-relevant data.", "Estimated Time": "4 hours", "Business Unit": "Technical"}, {"Week": 10, "Day": "Tuesday", "Workshop Topic": "Conference Room Pilot", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Walk through the end-to-end Field Service future-state design in a simulated Salesforce flow to validate that the proposed processes, roles, decisions, and handoffs support real operational scenarios before detailed build begins.", "Estimated Time": "6 hours", "Business Unit": "Field Service"}, {"Week": 10, "Day": "Wednesday", "Workshop Topic": "Conference Room Pilot", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Continue validating the Field Service future-state design through additional Salesforce-based scenarios, focusing on exception handling, usability, and alignment to frontline dispatch and execution needs.", "Estimated Time": "4 hours", "Business Unit": "Field Service"}, {"Week": 10, "Day": "Wednesday", "Workshop Topic": "Fit/Gap Confirmation", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Confirm the final Field Service fit/gap view for the Salesforce solution, including where standard capabilities are sufficient, where configuration is needed, and where business process adjustments may be required.", "Estimated Time": "2 hours", "Business Unit": "Field Service"}, {"Week": 10, "Day": "Friday", "Workshop Topic": "ESSO Integration", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define how Salesforce will integrate with ESSO to support SSO and user authentication.", "Estimated Time": "2 hours", "Business Unit": "Technical"}, {"Week": 10, "Day": "Friday", "Workshop Topic": "UXID Integration", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define how Salesforce will integrate with UXID as the source of employee and worker master data.", "Estimated Time": "2 hours", "Business Unit": "Technical"}, {"Week": 11, "Day": "Tuesday", "Workshop Topic": "Conference Room Pilot", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Walk through the end-to-end Maintenance future-state design in a simulated Salesforce flow to validate that the proposed processes, roles, priorities, and handoffs support both planned and reactive maintenance scenarios.", "Estimated Time": "6 hours", "Business Unit": "Maintenance"}, {"Week": 11, "Day": "Wednesday", "Workshop Topic": "Conference Room Pilot", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Continue validating the Maintenance future-state design through additional Salesforce-based scenarios, focusing on outage response, prioritization, exception handling, and operational usability.", "Estimated Time": "4 hours", "Business Unit": "Maintenance"}, {"Week": 11, "Day": "Wednesday", "Workshop Topic": "Fit/Gap Confirmation", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Confirm the final Maintenance fit/gap view for the Salesforce solution, including where standard capabilities are sufficient, where configuration is needed, and where process changes may be required.", "Estimated Time": "2 hours", "Business Unit": "Maintenance"}, {"Week": 11, "Day": "Friday", "Workshop Topic": "Back Office Tools (SMART / AI Assistant) Integration", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define how Salesforce will integrate with back-office tools such as SMART and AI Assistant for tasks, updates, and operational support.", "Estimated Time": "3 hours", "Business Unit": "Technical"}, {"Week": 12, "Day": "Tuesday", "Workshop Topic": "Conference Room Pilot", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Walk through the end-to-end Construction future-state design in a simulated Salesforce flow to validate that the proposed processes, roles, sequencing, and handoffs support survey-led and dependency-driven project work.", "Estimated Time": "6 hours", "Business Unit": "Construction"}, {"Week": 12, "Day": "Wednesday", "Workshop Topic": "Conference Room Pilot", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Continue validating the Construction future-state design through additional Salesforce-based scenarios, focusing on sequencing, dependencies, exception handling, and business usability.", "Estimated Time": "4 hours", "Business Unit": "Construction"}, {"Week": 12, "Day": "Wednesday", "Workshop Topic": "Fit/Gap Confirmation", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Business", "Objective": "Confirm the final Construction fit/gap view for the Salesforce solution, including where standard capabilities are sufficient, where configuration is needed, and where process adjustments may be required.", "Estimated Time": "2 hours", "Business Unit": "Construction"}, {"Week": 12, "Day": "Friday", "Workshop Topic": "Charter Time Integration", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define how Salesforce will trigger time punches and interact with Charter Time.", "Estimated Time": "2 hours", "Business Unit": "Technical"}, {"Week": 12, "Day": "Friday", "Workshop Topic": "IVR Integration", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define how IVR will integrate with Salesforce for technician and supervisor interactions.", "Estimated Time": "2 hours", "Business Unit": "Technical"}, {"Week": 12, "Day": "Friday", "Workshop Topic": "UCC Integration", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define how Salesforce will trigger outbound customer communications through UCC.", "Estimated Time": "2 hours", "Business Unit": "Technical"}, {"Week": 13, "Day": "Friday", "Workshop Topic": "BI Integration", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define how Salesforce will publish operational and analytical data to BI for downstream consumption.", "Estimated Time": "2 hours", "Business Unit": "Technical"}, {"Week": 13, "Day": "Friday", "Workshop Topic": "Spectrum Datahub Integration", "Phase of Engagement": "Design & Define the Future State", "Nature (Business or Technical)": "Technical", "Objective": "Define how Salesforce will publish data to Spectrum Datahub for enterprise consumption.", "Estimated Time": "2 hours", "Business Unit": "Technical"}, {"Week": 14, "Day": "Tuesday", "Workshop Topic": "Solution Confirmation Walkthrough", "Phase of Engagement": "Verify & Confirm the Design", "Nature (Business or Technical)": "Business", "Objective": "Review the finalized Field Service Salesforce design end to end and confirm that the target operating model, workflows, and supporting capabilities are ready to move into delivery with no major open design questions.", "Estimated Time": "4 hours", "Business Unit": "Field Service"}, {"Week": 14, "Day": "Wednesday", "Workshop Topic": "Epics Breakdown", "Phase of Engagement": "Verify & Confirm the Design", "Nature (Business or Technical)": "Business", "Objective": "Translate the approved Field Service design into a business-prioritized set of Salesforce delivery epics that clearly represent the required capabilities, process changes, and implementation scope.", "Estimated Time": "2 hours", "Business Unit": "Field Service"}, {"Week": 14, "Day": "Wednesday", "Workshop Topic": "Key Business Decisions Confirmation", "Phase of Engagement": "Verify & Confirm the Design", "Nature (Business or Technical)": "Business", "Objective": "Recap and confirm the final Field Service business decisions made throughout the design phase, ensuring alignment on operating model choices, policy decisions, and Salesforce capability usage before signoff.", "Estimated Time": "2 hours", "Business Unit": "Field Service"}, {"Week": 15, "Day": "Tuesday", "Workshop Topic": "Solution Confirmation Walkthrough", "Phase of Engagement": "Verify & Confirm the Design", "Nature (Business or Technical)": "Business", "Objective": "Review the finalized Maintenance Salesforce design end to end and confirm that the target operating model, workflows, and supporting capabilities are ready to move into delivery with no major open design questions.", "Estimated Time": "4 hours", "Business Unit": "Maintenance"}, {"Week": 15, "Day": "Wednesday", "Workshop Topic": "Epics Breakdown", "Phase of Engagement": "Verify & Confirm the Design", "Nature (Business or Technical)": "Business", "Objective": "Translate the approved Maintenance design into a business-prioritized set of Salesforce delivery epics that clearly represent the required capabilities, process changes, and implementation scope.", "Estimated Time": "2 hours", "Business Unit": "Maintenance"}, {"Week": 15, "Day": "Wednesday", "Workshop Topic": "Key Business Decisions Confirmation", "Phase of Engagement": "Verify & Confirm the Design", "Nature (Business or Technical)": "Business", "Objective": "Recap and confirm the final Maintenance business decisions made throughout the design phase, ensuring alignment on planning, prioritization, outage response, and Salesforce capability usage before signoff.", "Estimated Time": "2 hours", "Business Unit": "Maintenance"}, {"Week": 16, "Day": "Tuesday", "Workshop Topic": "Solution Confirmation Walkthrough", "Phase of Engagement": "Verify & Confirm the Design", "Nature (Business or Technical)": "Business", "Objective": "Review the finalized Construction Salesforce design end to end and confirm that the target operating model, workflows, and supporting capabilities are ready to move into delivery with no major open design questions.", "Estimated Time": "4 hours", "Business Unit": "Construction"}, {"Week": 16, "Day": "Wednesday", "Workshop Topic": "Epics Breakdown", "Phase of Engagement": "Verify & Confirm the Design", "Nature (Business or Technical)": "Business", "Objective": "Translate the approved Construction design into a business-prioritized set of Salesforce delivery epics that clearly represent the required capabilities, process changes, and implementation scope.", "Estimated Time": "2 hours", "Business Unit": "Construction"}, {"Week": 16, "Day": "Wednesday", "Workshop Topic": "Key Business Decisions Confirmation", "Phase of Engagement": "Verify & Confirm the Design", "Nature (Business or Technical)": "Business", "Objective": "Recap and confirm the final Construction business decisions made throughout the design phase, ensuring alignment on sequencing, dependencies, contractor considerations, and Salesforce capability usage before signoff.", "Estimated Time": "2 hours", "Business Unit": "Construction"}, {"Week": 16, "Day": "Friday", "Workshop Topic": "Key Design Decisions Confirmation", "Phase of Engagement": "Verify & Confirm the Design", "Nature (Business or Technical)": "Technical", "Objective": "Recap and confirm the final technical, integration, data, and architecture decisions made throughout the design phase.", "Estimated Time": "2 hours", "Business Unit": "Technical"}, {"Week": 17, "Day": "Tuesday", "Workshop Topic": "Implementation and Rollout Plan", "Phase of Engagement": "Executive Sign-Off", "Nature (Business or Technical)": "Business", "Objective": "Review the Field Service implementation and rollout plan for Salesforce, including delivery sequencing, deployment approach, business readiness, change impacts, and key dependencies required for successful adoption.", "Estimated Time": "2 hours", "Business Unit": "Field Service"}, {"Week": 17, "Day": "Tuesday", "Workshop Topic": "Implementation and Rollout Plan", "Phase of Engagement": "Executive Sign-Off", "Nature (Business or Technical)": "Business", "Objective": "Review the Maintenance implementation and rollout plan for Salesforce, including delivery sequencing, deployment approach, business readiness, change impacts, and key dependencies required for successful adoption.", "Estimated Time": "2 hours", "Business Unit": "Maintenance"}, {"Week": 17, "Day": "Tuesday", "Workshop Topic": "Implementation and Rollout Plan", "Phase of Engagement": "Executive Sign-Off", "Nature (Business or Technical)": "Business", "Objective": "Review the Construction implementation and rollout plan for Salesforce, including delivery sequencing, deployment approach, business readiness, change impacts, and key dependencies required for successful adoption.", "Estimated Time": "2 hours", "Business Unit": "Construction"}];
+    const STORAGE_KEY = 'wfm-global-design-workshops';
+    const WEEK1_START = new Date('2026-05-11T00:00:00');
+
+    const dayIndexMap = {
+      'Monday': 0,
+      'Tuesday': 1,
+      'Wednesday': 2,
+      'Thursday': 3,
+      'Friday': 4
+    };
+
+    const buMeta = {
+      'All': { key: 'all', label: 'All' },
+      'Field Service': { key: 'fs', label: 'Field Service' },
+      'Maintenance': { key: 'mnt', label: 'Maintenance' },
+      'Construction': { key: 'con', label: 'Construction' },
+      'Technical': { key: 'tech', label: 'Technical' }
+    };
+
+    let rawData = [];
+    let activeFilter = 'All';
+    let visibleMonths = [];
+    let currentMonthIndex = 0;
+
+    const filtersEl = document.getElementById('filters');
+    const monthLabelEl = document.getElementById('monthLabel');
+    const monthHoursEl = document.getElementById('monthHours');
+    const totalHoursEl = document.getElementById('totalHours');
+    const monthCountEl = document.getElementById('monthCount');
+    const currentFilterLabelEl = document.getElementById('currentFilterLabel');
+    const currentFilterSubEl = document.getElementById('currentFilterSub');
+    const weekdayHeaderEl = document.getElementById('weekdayHeader');
+    const calendarGridEl = document.getElementById('calendarGrid');
+    const emptyStateEl = document.getElementById('emptyState');
+    const tooltipEl = document.getElementById('tooltip');
+    const fileInputEl = document.getElementById('fileInput');
+
+    function parseHours(value) {
+      const text = String(value || '').trim().toLowerCase();
+      const match = text.match(/(\d+(?:\.\d+)?)/);
+      return match ? Number(match[1]) : 0;
+    }
+
+    function normalizeRecord(record) {
+      const week = Number(record['Week'] ?? record['week'] ?? '');
+      const day = String(record['Day'] ?? record['day'] ?? '').trim();
+      const topic = String(record['Workshop Topic'] ?? record['Topic'] ?? record['workshop topic'] ?? '').trim();
+      const phase = String(record['Phase of Engagement'] ?? '').trim();
+      const nature = String(record['Nature (Business or Technical)'] ?? '').trim();
+      const objective = String(record['Objective'] ?? '').trim();
+      const estimatedTime = String(record['Estimated Time'] ?? '').trim();
+      let bu = String(record['Business Unit'] ?? record['BU'] ?? '').trim();
+
+      if (!bu && nature.toLowerCase() === 'technical') bu = 'Technical';
+      if (!bu) bu = 'Technical';
+
+      if (!week || !day || !topic) return null;
+      if (!(day in dayIndexMap)) return null;
+
+      // Business rule fix: keep Lighthouse pair together
+      const finalWeek = topic === 'Lighthouse Data Conversion' ? 6 : week;
+
+      const workshopDate = new Date(WEEK1_START);
+      workshopDate.setDate(WEEK1_START.getDate() + ((finalWeek - 1) * 7) + dayIndexMap[day]);
+
+      return {
+        Week: finalWeek,
+        Day: day,
+        'Workshop Topic': topic,
+        'Phase of Engagement': phase,
+        'Nature (Business or Technical)': nature,
+        Objective: objective,
+        'Estimated Time': estimatedTime,
+        'Business Unit': bu,
+        hours: parseHours(estimatedTime),
+        dateISO: workshopDate.toISOString().slice(0,10),
+        monthKey: `${workshopDate.getFullYear()}-${String(workshopDate.getMonth()+1).padStart(2,'0')}`,
+        monthLabel: workshopDate.toLocaleString('en-US', { month:'long', year:'numeric' }),
+        dateObj: workshopDate
+      };
+    }
+
+    function loadData(records) {
+      rawData = (records || []).map(normalizeRecord).filter(Boolean);
+      rawData.sort((a,b) => a.dateObj - b.dateObj || a['Business Unit'].localeCompare(b['Business Unit']) || a['Workshop Topic'].localeCompare(b['Workshop Topic']));
+      visibleMonths = [...new Set(rawData.map(r => r.monthKey))].sort();
+      if (!visibleMonths.length) {
+        visibleMonths = [monthKeyFromDate(WEEK1_START)];
+      }
+      currentMonthIndex = Math.min(currentMonthIndex, visibleMonths.length - 1);
+      buildFilters();
+      buildWeekdayHeader();
+      render();
+    }
+
+    function monthKeyFromDate(d) {
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    }
+
+    function buildFilters() {
+      filtersEl.innerHTML = '';
+      Object.keys(buMeta).forEach(name => {
+        const btn = document.createElement('button');
+        btn.className = 'filter-btn' + (name === activeFilter ? ` active active-${buMeta[name].key}` : '');
+        btn.textContent = name;
+        btn.addEventListener('click', () => {
+          activeFilter = name;
+          document.querySelectorAll('.filter-btn').forEach(b => b.className = 'filter-btn');
+          btn.className = `filter-btn active active-${buMeta[name].key}`;
+          render();
+        });
+        filtersEl.appendChild(btn);
+      });
+    }
+
+    function buildWeekdayHeader() {
+      weekdayHeaderEl.innerHTML = '';
+      ['Monday','Tuesday','Wednesday','Thursday','Friday'].forEach(day => {
+        const el = document.createElement('div');
+        el.className = 'weekday';
+        el.textContent = day;
+        weekdayHeaderEl.appendChild(el);
+      });
+    }
+
+    function getFilteredData() {
+      if (activeFilter === 'All') return rawData;
+      return rawData.filter(r => r['Business Unit'] === activeFilter);
+    }
+
+    function getMonthDateRange(monthKey) {
+      const [year, month] = monthKey.split('-').map(Number);
+      const firstOfMonth = new Date(year, month - 1, 1);
+      const lastOfMonth = new Date(year, month, 0);
+
+      let gridStart = new Date(firstOfMonth);
+      while (gridStart.getDay() !== 1) {
+        gridStart.setDate(gridStart.getDate() - 1);
+      }
+
+      let gridEnd = new Date(lastOfMonth);
+      while (gridEnd.getDay() !== 5) {
+        gridEnd.setDate(gridEnd.getDate() + 1);
+      }
+
+      return { firstOfMonth, lastOfMonth, gridStart, gridEnd };
+    }
+
+    function getMonthWorkdays(gridStart, gridEnd) {
+      const days = [];
+      const cursor = new Date(gridStart);
+      while (cursor <= gridEnd) {
+        const day = cursor.getDay();
+        if (day >= 1 && day <= 5) {
+          days.push(new Date(cursor));
+        }
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      return days;
+    }
+
+    function formatHours(hours) {
+      if (Math.abs(hours - Math.round(hours)) < 0.001) return String(Math.round(hours));
+      return hours.toFixed(1).replace(/\.0$/, '');
+    }
+
+    function getFilterSubtext() {
+      switch(activeFilter) {
+        case 'Field Service': return 'Showing Field Service workshops only.';
+        case 'Maintenance': return 'Showing Maintenance workshops only.';
+        case 'Construction': return 'Showing Construction workshops only.';
+        case 'Technical': return 'Showing Technical workshops only.';
+        default: return 'Showing all business and technical workshops.';
+      }
+    }
+
+    function pillClass(bu) {
+      if (bu === 'Field Service') return 'fs';
+      if (bu === 'Maintenance') return 'mnt';
+      if (bu === 'Construction') return 'con';
+      return 'tech';
+    }
+
+    function render() {
+      const filtered = getFilteredData();
+      const activeMonthKey = visibleMonths[currentMonthIndex];
+      const monthData = filtered.filter(r => r.monthKey === activeMonthKey);
+
+      const [year, month] = activeMonthKey.split('-').map(Number);
+      const displayMonthDate = new Date(year, month - 1, 1);
+      monthLabelEl.textContent = displayMonthDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+      const monthHours = monthData.reduce((sum, r) => sum + r.hours, 0);
+      const totalHours = filtered.reduce((sum, r) => sum + r.hours, 0);
+      const monthCount = monthData.length;
+
+      {
+      const buffer = monthHours * 0.2;
+      monthHoursEl.innerHTML = formatHours(monthHours) + 'h <span style="color:#9aa3af; font-size:14px;">(+ ' + formatHours(buffer) + 'h buffer)</span>';
+    }
+      {
+      const buffer = totalHours * 0.2;
+      totalHoursEl.innerHTML = formatHours(totalHours) + 'h <span style="color:#9aa3af; font-size:14px;">(+ ' + formatHours(buffer) + 'h buffer)</span>';
+    }
+      monthCountEl.textContent = String(monthCount);
+      currentFilterLabelEl.textContent = activeFilter;
+      currentFilterSubEl.textContent = getFilterSubtext();
+
+      const { firstOfMonth, lastOfMonth, gridStart, gridEnd } = getMonthDateRange(activeMonthKey);
+      const workdays = getMonthWorkdays(gridStart, gridEnd);
+      const byDate = {};
+      monthData.forEach(r => {
+        if (!byDate[r.dateISO]) byDate[r.dateISO] = [];
+        byDate[r.dateISO].push(r);
+      });
+
+      calendarGridEl.innerHTML = '';
+      let visibleAny = false;
+
+      workdays.forEach(d => {
+        const iso = d.toISOString().slice(0,10);
+        const inMonth = d.getMonth() === firstOfMonth.getMonth();
+        const cell = document.createElement('div');
+        cell.className = 'day-cell' + (inMonth ? '' : ' outside');
+
+        const top = document.createElement('div');
+        top.className = 'day-top';
+
+        const name = document.createElement('div');
+        name.className = 'day-name';
+        name.textContent = d.toLocaleString('en-US', { weekday: 'short' });
+
+        const date = document.createElement('div');
+        date.className = 'day-date';
+        date.textContent = d.getDate();
+
+        const dayItems = (byDate[iso] || []).sort((a,b) =>
+          a['Business Unit'].localeCompare(b['Business Unit']) || a['Workshop Topic'].localeCompare(b['Workshop Topic'])
+        );
+
+        const leftWrap = document.createElement('div');
+        if (dayItems.length) {
+          const totalHours = dayItems.reduce((sum, item) => sum + (item.hours || 0), 0);
+          const totalBadge = document.createElement('div');
+          totalBadge.className = 'day-total';
+          totalBadge.textContent = `${formatHours(totalHours)}h`;
+          leftWrap.appendChild(totalBadge);
+        } else {
+          leftWrap.appendChild(name);
+        }
+
+        top.appendChild(leftWrap);
+        top.appendChild(date);
+        cell.appendChild(top);
+
+        const pillsWrap = document.createElement('div');
+        pillsWrap.className = 'pills';
+
+        if (dayItems.length) visibleAny = true;
+
+        dayItems.forEach(item => {
+          const pill = document.createElement('div');
+          pill.className = 'pill ' + pillClass(item['Business Unit']);
+          pill.title = (item['Workshop Topic'] || '') + ' — ' + (item['Objective'] || 'No objective provided');
+          let icon = '';
+if(item['Business Unit']==='Field Service') icon='🚐 ';
+else if(item['Business Unit']==='Maintenance') icon='🔧 ';
+else if(item['Business Unit']==='Construction') icon='🚧 ';
+else icon='💻 ';
+pill.innerHTML = `${icon}${item['Workshop Topic']}<small>${item['Business Unit']} · ${item['Estimated Time'] || 'TBD'}</small>`;
+
+          const tooltipHtml = `
+            <strong>${escapeHtml(item['Workshop Topic'])}</strong>
+            <div class="meta">Week ${item['Week']} · ${escapeHtml(item['Day'])} · ${escapeHtml(item['Business Unit'])}</div>
+            <div><strong style="display:inline">Phase:</strong> ${escapeHtml(item['Phase of Engagement'] || '—')}</div>
+            <div><strong style="display:inline">Nature:</strong> ${escapeHtml(item['Nature (Business or Technical)'] || '—')}</div>
+            <div><strong style="display:inline">Estimated time:</strong> ${escapeHtml(item['Estimated Time'] || '—')}</div>
+            <div style="margin-top:8px"><strong style="display:inline">Objective:</strong> ${escapeHtml(item['Objective'] || '—')}</div>
+          `;
+
+          pill.addEventListener('mouseenter', (e) => {
+            tooltipPinned = false;
+            showTooltip(tooltipHtml, e);
+          });
+          pill.addEventListener('mousemove', (e) => {
+            if (!tooltipPinned) moveTooltip(e);
+          });
+          pill.addEventListener('mouseleave', () => {
+            setTimeout(() => {
+              if (!tooltipPinned) hideTooltip();
+            }, 80);
+          });
+          pill.addEventListener('click', (e) => {
+            e.stopPropagation();
+            tooltipPinned = true;
+            showTooltip(tooltipHtml, e);
+          });
+
+          pillsWrap.appendChild(pill);
+        });
+
+        cell.appendChild(pillsWrap);
+        calendarGridEl.appendChild(cell);
+      });
+
+      emptyStateEl.style.display = visibleAny ? 'none' : 'block';
+      document.getElementById('prevBtn').disabled = currentMonthIndex === 0;
+      document.getElementById('nextBtn').disabled = currentMonthIndex === visibleMonths.length - 1;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    
+    let tooltipPinned = false;
+
+    function showTooltip(html, event) {
+      tooltipEl.innerHTML = html;
+      tooltipEl.style.display = 'block';
+      moveTooltip(event);
+    }
+
+    function moveTooltip(event) {
+      const pad = 18;
+      const rect = tooltipEl.getBoundingClientRect();
+      let left = (event && typeof event.clientX === 'number') ? event.clientX + pad : window.innerWidth / 2 - rect.width / 2;
+      let top = (event && typeof event.clientY === 'number') ? event.clientY + pad : 120;
+
+      if (left + rect.width > window.innerWidth - 12) {
+        left = window.innerWidth - rect.width - 12;
+      }
+      if (top + rect.height > window.innerHeight - 12) {
+        top = window.innerHeight - rect.height - 12;
+      }
+      if (left < 12) left = 12;
+      if (top < 12) top = 12;
+
+      tooltipEl.style.left = left + 'px';
+      tooltipEl.style.top = top + 'px';
+    }
+
+    function hideTooltip() {
+      if (tooltipPinned) return;
+      tooltipEl.style.display = 'none';
+    }
+
+    document.addEventListener('click', (e) => {
+      const pill = e.target.closest('.pill');
+      const tooltip = e.target.closest('#tooltip');
+      if (pill || tooltip) return;
+      tooltipPinned = false;
+      tooltipEl.style.display = 'none';
+    });
+
+
+    document.getElementById('prevBtn').addEventListener('click', () => {
+      if (currentMonthIndex > 0) {
+        currentMonthIndex--;
+        render();
+      }
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      if (currentMonthIndex < visibleMonths.length - 1) {
+        currentMonthIndex++;
+        render();
+      }
+    });
+
+    function handleUploadedRecords(records) {
+      const normalized = (records || []).map(normalizeRecord).filter(Boolean);
+      if (!normalized.length) {
+        alert('No valid workshop rows were found in the uploaded file.');
+        return;
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+      loadData(records);
+    }
+
+    function parseCsvText(text) {
+      const workbook = XLSX.read(text, { type: 'string' });
+      const firstSheet = workbook.SheetNames[0];
+      return XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: '' });
+    }
+
+    fileInputEl.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      const name = file.name.toLowerCase();
+      const reader = new FileReader();
+
+      if (name.endsWith('.csv')) {
+        reader.onload = evt => {
+          const records = parseCsvText(evt.target.result);
+          handleUploadedRecords(records);
+        };
+        reader.readAsText(file);
+      } else {
+        reader.onload = evt => {
+          const workbook = XLSX.read(evt.target.result, { type: 'array' });
+          const firstSheet = workbook.SheetNames[0];
+          const records = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: '' });
+          handleUploadedRecords(records);
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    });
+
+    function init() {
+      let source = DEFAULT_DATA;
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          source = JSON.parse(saved);
+        }
+      } catch (e) {
+        source = DEFAULT_DATA;
+      }
+      loadData(source);
+    }
+
+    init();
+  </script>
+
+<style>
+.pill.tech {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
+.pill.tech small {
+  color: #ffffff !important;
+}
+</style>
+
+</body>
+</html>
