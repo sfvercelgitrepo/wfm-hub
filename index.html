@@ -158,6 +158,8 @@ body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text)
   transition: all .12s; background: var(--bg);
 }
 .quick-link:hover { background: var(--navy-mid); color: #fff; border-color: var(--navy-mid); }
+a.quick-link { text-decoration: none; color: var(--navy-mid); display: inline-block; }
+a.quick-link:hover { color: #fff; }
 
 /* Announcements */
 .announce-list { display: flex; flex-direction: column; gap: 8px; }
@@ -375,6 +377,7 @@ body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text)
     <div class="quick-link" onclick="nav('risk-log')">&#9888; Risk Log</div>
     <div class="quick-link" onclick="nav('steerco')">&#128101; Steerco Decks</div>
     <div class="quick-link" onclick="nav('integration-arch')">&#128268; Integration Architecture</div>
+    <a class="quick-link" href="https://pwc-us-adv-cc-9cf57793.atlassian.net/" target="_blank" rel="noopener noreferrer">&#128279; Jira</a>
   </div>
 
   <div class="dir-section">
