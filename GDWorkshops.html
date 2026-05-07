@@ -129,6 +129,26 @@
       align-items: stretch;
       margin-top: 18px;
     }
+    .filter-export-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .filter-export-title {
+      margin-bottom: 0;
+    }
+    .export-excel-btn {
+      flex-shrink: 0;
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .export-excel-btn:hover {
+      filter: brightness(1.08);
+    }
     .filter-group {
       display: flex;
       flex-wrap: wrap;
@@ -499,7 +519,12 @@
 
     <section class="controls">
       <div class="panel">
-        <div class="legend-title">Filter by business unit</div>
+        <div class="filter-export-row">
+          <div class="legend-title filter-export-title">Filter by business unit</div>
+          <button type="button" class="nav-btn export-excel-btn" id="exportExcelBtn" title="Download visible workshops as .xlsx">
+            Export to Excel
+          </button>
+        </div>
         <div class="filter-group" id="filters"></div>
       </div>
       <div class="month-nav">
@@ -720,6 +745,40 @@
     function getFilteredData() {
       if (activeFilter === 'All') return rawData;
       return rawData.filter(r => r['Business Unit'] === activeFilter);
+    }
+
+    function exportWorkshopsToExcel() {
+      if (typeof XLSX === 'undefined') {
+        alert('Spreadsheet library is still loading. Please try again in a moment.');
+        return;
+      }
+      const data = getFilteredData();
+      if (!data.length) {
+        alert('No workshops to export for the current filter.');
+        return;
+      }
+      const rows = data.map(r => ({
+        'Calendar Date': r.dateISO,
+        'Week': r.Week,
+        'Day': r.Day,
+        'Workshop Topic': r['Workshop Topic'],
+        'Phase of Engagement': r['Phase of Engagement'],
+        'Nature (Business or Technical)': r['Nature (Business or Technical)'],
+        'Estimated Time': r['Estimated Time'],
+        'Hours': r.hours,
+        'Business Unit': r['Business Unit'],
+        'Objective': r.Objective
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws['!cols'] = [
+        { wch: 12 }, { wch: 6 }, { wch: 10 }, { wch: 44 }, { wch: 30 }, { wch: 14 },
+        { wch: 14 }, { wch: 8 }, { wch: 16 }, { wch: 72 }
+      ];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Workshops');
+      const stamp = new Date().toISOString().slice(0, 10);
+      const bu = activeFilter === 'All' ? 'All-BUs' : activeFilter.replace(/[^\w]+/g, '-');
+      XLSX.writeFile(wb, `WFM-Global-Design-Workshops_${stamp}_${bu}.xlsx`);
     }
 
     function getMonthDateRange(monthKey) {
@@ -982,6 +1041,8 @@ pill.innerHTML = `${icon}${item['Workshop Topic']}<small>${item['Business Unit']
       const firstSheet = workbook.SheetNames[0];
       return XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: '' });
     }
+
+    document.getElementById('exportExcelBtn').addEventListener('click', exportWorkshopsToExcel);
 
     fileInputEl.addEventListener('change', (e) => {
       const file = e.target.files && e.target.files[0];
