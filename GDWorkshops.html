@@ -123,10 +123,7 @@
     }
 
     .controls {
-      display: grid;
-      grid-template-columns: 1.4fr 0.9fr;
-      gap: 16px;
-      align-items: stretch;
+      display: block;
       margin-top: 18px;
     }
     .filter-export-row {
@@ -187,6 +184,47 @@
       border-radius: var(--radius);
       padding: 14px 18px;
       box-shadow: var(--shadow);
+    }
+    .month-nav-standalone {
+      margin-top: 18px;
+    }
+    .calendar-with-arrows {
+      display: flex;
+      align-items: stretch;
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .calendar-with-arrows .calendar-card {
+      margin-top: 0;
+      flex: 1;
+      min-width: 0;
+    }
+    .calendar-arrow {
+      flex-shrink: 0;
+      width: 52px;
+      align-self: stretch;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .calendar-arrow:hover:not(:disabled) {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .calendar-arrow:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
     }
     .nav-btn {
       border: 1px solid var(--line);
@@ -401,7 +439,7 @@
     }
 
     @media (max-width: 1180px) {
-      .controls, .legend-wrap { grid-template-columns: 1fr; }
+      .legend-wrap { grid-template-columns: 1fr; }
       .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 760px) {
@@ -412,6 +450,8 @@
       .calendar-grid { grid-template-columns: 1fr; }
       .weekday { display: none; }
       .day-cell { border-right: none; min-height: 120px; }
+      .calendar-with-arrows { gap: 8px; }
+      .calendar-arrow { width: 42px; font-size: 22px; }
     }
 
     /* ── Passphrase gate (shared with project hub) ── */
@@ -538,11 +578,6 @@
         </div>
         <div class="filter-group" id="filters"></div>
       </div>
-      <div class="month-nav">
-        <button class="nav-btn" id="prevBtn">← Previous month</button>
-        <div class="month-label" id="monthLabel"></div>
-        <button class="nav-btn" id="nextBtn">Next month →</button>
-      </div>
     </section>
 
     <section class="kpis">
@@ -568,11 +603,21 @@
       </div>
     </section>
 
-    <section class="calendar-card">
-      <div class="calendar-grid" id="weekdayHeader"></div>
-      <div class="calendar-grid" id="calendarGrid"></div>
-      <div class="empty-state" id="emptyState" style="display:none;">No workshops match the selected filter for this month.</div>
+    <section class="month-nav month-nav-standalone" aria-label="Month navigation">
+      <button type="button" class="nav-btn" id="prevBtn">← Previous month</button>
+      <div class="month-label" id="monthLabel"></div>
+      <button type="button" class="nav-btn" id="nextBtn">Next month →</button>
     </section>
+
+    <div class="calendar-with-arrows">
+      <button type="button" class="calendar-arrow calendar-arrow-left" id="calendarPrevArrow" aria-label="Previous month">&#8592;</button>
+      <section class="calendar-card">
+        <div class="calendar-grid" id="weekdayHeader"></div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="empty-state" id="emptyState" style="display:none;">No workshops match the selected filter for this month.</div>
+      </section>
+      <button type="button" class="calendar-arrow calendar-arrow-right" id="calendarNextArrow" aria-label="Next month">&#8594;</button>
+    </div>
 
     <div class="footer-note">Project Kickoff May 13, 2026. Week 1 workshops begin May 18, 2026. Business-day calendar view shows Monday through Friday only.</div>
   </div>
@@ -1053,8 +1098,16 @@ pill.innerHTML = `${icon}${item['Workshop Topic']}<small>${item['Business Unit']
       });
 
       emptyStateEl.style.display = visibleAny ? 'none' : 'block';
-      document.getElementById('prevBtn').disabled = currentMonthIndex === 0;
-      document.getElementById('nextBtn').disabled = currentMonthIndex === visibleMonths.length - 1;
+      const atFirst = currentMonthIndex === 0;
+      const atLast = currentMonthIndex === visibleMonths.length - 1;
+      ['prevBtn', 'calendarPrevArrow'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = atFirst;
+      });
+      ['nextBtn', 'calendarNextArrow'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = atLast;
+      });
     }
 
     function escapeHtml(value) {
@@ -1108,19 +1161,24 @@ pill.innerHTML = `${icon}${item['Workshop Topic']}<small>${item['Business Unit']
     });
 
 
-    document.getElementById('prevBtn').addEventListener('click', () => {
+    function goPrevMonth() {
       if (currentMonthIndex > 0) {
         currentMonthIndex--;
         render();
       }
-    });
+    }
 
-    document.getElementById('nextBtn').addEventListener('click', () => {
+    function goNextMonth() {
       if (currentMonthIndex < visibleMonths.length - 1) {
         currentMonthIndex++;
         render();
       }
-    });
+    }
+
+    document.getElementById('prevBtn').addEventListener('click', goPrevMonth);
+    document.getElementById('nextBtn').addEventListener('click', goNextMonth);
+    document.getElementById('calendarPrevArrow').addEventListener('click', goPrevMonth);
+    document.getElementById('calendarNextArrow').addEventListener('click', goNextMonth);
 
     function handleUploadedRecords(records) {
       const normalized = (records || []).map(normalizeRecord).filter(Boolean);
