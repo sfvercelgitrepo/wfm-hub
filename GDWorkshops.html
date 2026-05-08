@@ -18,8 +18,9 @@
       --con: #FDD835;
       --tech: #000000;
       --all: #475569;
-      --shadow: 0 10px 28px rgba(20, 42, 67, 0.08);
-      --radius: 16px;
+      --shadow: 0 6px 18px rgba(20, 42, 67, 0.06);
+      --radius: 12px;
+      --section-gap: 10px;
     }
     * { box-sizing: border-box; }
     body {
@@ -31,76 +32,80 @@
     .page {
       max-width: 1480px;
       margin: 0 auto;
-      padding: 24px;
+      padding: 14px 16px 20px;
     }
     .hero {
       background: linear-gradient(135deg, #1f3a5f 0%, #274d78 100%);
       color: white;
-      border-radius: 22px;
-      padding: 28px 30px 24px;
+      border-radius: 14px;
+      padding: 14px 16px 12px;
       box-shadow: var(--shadow);
     }
     .eyebrow {
-      font-size: 12px;
-      letter-spacing: 0.12em;
+      font-size: 10px;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
       opacity: 0.8;
-      margin-bottom: 10px;
+      margin-bottom: 4px;
     }
     h1 {
       margin: 0;
-      font-size: 34px;
-      line-height: 1.15;
+      font-size: 22px;
+      line-height: 1.2;
     }
     .subtitle {
-      margin-top: 10px;
-      max-width: 980px;
-      font-size: 15px;
-      line-height: 1.5;
+      margin-top: 6px;
+      max-width: 920px;
+      font-size: 12px;
+      line-height: 1.45;
       color: rgba(255,255,255,0.88);
     }
 
     .panel {
       background: var(--card);
       border-radius: var(--radius);
-      padding: 18px 20px;
+      padding: 10px 12px;
       box-shadow: var(--shadow);
-      margin-top: 18px;
+      margin-top: var(--section-gap);
     }
-    .legend-wrap {
+    .locations-filters-row {
       display: grid;
-      grid-template-columns: 1.1fr 1fr;
-      gap: 16px;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 14px 16px;
       align-items: start;
     }
+    .locations-filters-row .locations-col,
+    .locations-filters-row .filters-col {
+      min-width: 0;
+    }
     .legend-title, .uploader-title {
-      font-size: 13px;
+      font-size: 10px;
       font-weight: 700;
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
     .legend-list {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 6px;
     }
     .legend-item {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
+      gap: 6px;
+      padding: 5px 10px;
       border: 1px solid var(--line);
       border-radius: 999px;
       background: #fbfcfe;
-      font-size: 14px;
+      font-size: 11px;
     }
     .swatch {
-      width: 12px;
-      height: 12px;
+      width: 8px;
+      height: 8px;
       border-radius: 999px;
-      flex: 0 0 12px;
+      flex: 0 0 8px;
     }
     .sw-fs { background: var(--fs); }
     .sw-mnt { background: var(--mnt); }
@@ -117,22 +122,44 @@
       max-width: 100%;
     }
     .upload-note {
-      font-size: 13px;
+      font-size: 11px;
       color: var(--muted);
-      line-height: 1.5;
+      line-height: 1.4;
     }
 
-    .controls {
-      display: block;
-      margin-top: 18px;
+    .hero-layout {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
     }
+    .hero-charter-logo {
+      height: 40px;
+      object-fit: contain;
+      background: white;
+      padding: 4px 8px;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      flex-shrink: 0;
+    }
+    .hero-footnote {
+      margin-top: 6px;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.85);
+      line-height: 1.35;
+    }
+
+    .filters-col .filter-export-row {
+      margin-bottom: 6px;
+    }
+
     .filter-export-row {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 10px;
+      gap: 8px;
+      margin-bottom: 6px;
     }
     .filter-export-title {
       margin-bottom: 0;
@@ -149,14 +176,15 @@
     .filter-group {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 6px;
     }
     .filter-btn {
       border: 1px solid var(--line);
       background: white;
       color: var(--text);
-      padding: 10px 14px;
+      padding: 5px 11px;
       border-radius: 999px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       transition: 0.15s ease;
@@ -179,20 +207,20 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 14px;
+      gap: 10px;
       background: white;
       border-radius: var(--radius);
-      padding: 14px 18px;
+      padding: 8px 12px;
       box-shadow: var(--shadow);
     }
     .month-nav-standalone {
-      margin-top: 18px;
+      margin-top: var(--section-gap);
     }
     .calendar-with-arrows {
       display: flex;
       align-items: stretch;
-      gap: 12px;
-      margin-top: 18px;
+      gap: 8px;
+      margin-top: var(--section-gap);
     }
     .calendar-with-arrows .calendar-card {
       margin-top: 0;
@@ -201,14 +229,14 @@
     }
     .calendar-arrow {
       flex-shrink: 0;
-      width: 52px;
+      width: 40px;
       align-self: stretch;
       border: 1px solid var(--line);
       border-radius: var(--radius);
       background: #fff;
       box-shadow: var(--shadow);
       cursor: pointer;
-      font-size: 28px;
+      font-size: 22px;
       font-weight: 700;
       line-height: 1;
       color: var(--accent);
@@ -229,14 +257,15 @@
     .nav-btn {
       border: 1px solid var(--line);
       background: #fff;
-      padding: 10px 14px;
-      border-radius: 10px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 12px;
       cursor: pointer;
       font-weight: 600;
       color: var(--text);
     }
     .month-label {
-      font-size: 22px;
+      font-size: 16px;
       font-weight: 800;
       color: var(--accent);
     }
@@ -244,39 +273,40 @@
     .kpis {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 16px;
-      margin-top: 18px;
+      gap: 8px;
+      margin-top: var(--section-gap);
     }
     .kpi {
       background: white;
       border-radius: var(--radius);
-      padding: 18px;
+      padding: 8px 10px;
       box-shadow: var(--shadow);
-      min-height: 108px;
+      min-height: 0;
     }
     .kpi-label {
       color: var(--muted);
-      font-size: 13px;
+      font-size: 9px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
     .kpi-value {
-      margin-top: 10px;
-      font-size: 32px;
+      margin-top: 2px;
+      font-size: 20px;
       font-weight: 800;
       color: var(--accent);
+      line-height: 1.15;
     }
     .kpi-sub {
-      margin-top: 8px;
-      font-size: 13px;
+      margin-top: 4px;
+      font-size: 10px;
       color: var(--muted);
-      line-height: 1.45;
+      line-height: 1.35;
     }
 
     .calendar-card {
       background: white;
-      border-radius: 22px;
+      border-radius: 14px;
       box-shadow: var(--shadow);
       margin-top: 18px;
       overflow: hidden;
@@ -432,20 +462,24 @@
       font-size: 15px;
     }
     .footer-note {
-      margin-top: 14px;
-      font-size: 12px;
+      margin-top: 10px;
+      font-size: 11px;
       color: var(--muted);
       text-align: right;
     }
 
     @media (max-width: 1180px) {
-      .legend-wrap { grid-template-columns: 1fr; }
       .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 900px) {
+      .locations-filters-row {
+        grid-template-columns: 1fr;
+      }
     }
     @media (max-width: 760px) {
       .page { padding: 14px; }
       h1 { font-size: 28px; }
-      .month-label { font-size: 18px; }
+      .month-label { font-size: 15px; }
       .kpis { grid-template-columns: 1fr; }
       .calendar-grid { grid-template-columns: 1fr; }
       .weekday { display: none; }
@@ -526,7 +560,7 @@
   </div>
   <div class="page">
     <section class="hero">
-    <div style="display:flex; align-items:center; justify-content:space-between;">
+    <div class="hero-layout">
         <div>
             <div class="eyebrow">Global Design Program</div>
             <h1>WFM Salesforce Transformation Global Design</h1>
@@ -536,18 +570,16 @@
                 and supporting Technical workstreams.
             </div>
         </div>
-        <img src="https://corporate.charter.com/static/d617519f6e8ec1333149b2e86dd914fb/58aae/Charter_Communications_Logo_Preview_0.jpg" style="height:60px; object-fit:contain; background:white; padding:8px 12px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+        <img class="hero-charter-logo" src="https://corporate.charter.com/static/d617519f6e8ec1333149b2e86dd914fb/58aae/Charter_Communications_Logo_Preview_0.jpg" alt="Charter">
     </div>
-
-      
-    </section>
-    <div style="margin-top:10px; font-size:12px; color: rgba(255,255,255,0.9);">
+    <div class="hero-footnote">
       * Workshops are subject to rescheduling based on stakeholder availability.
     </div>
+    </section>
 
 
-    <section class="panel legend-wrap">
-      <div>
+    <section class="panel locations-filters-row">
+      <div class="locations-col">
         <div class="legend-title">Workshop locations</div>
         <div class="legend-list">
           <div class="legend-item"><span class="swatch sw-fs"></span><strong>Field Service:</strong> Tampa, FL</div>
@@ -555,21 +587,18 @@
           <div class="legend-item"><span class="swatch sw-con"></span><strong>Construction:</strong> Denver, CO</div>
           <div class="legend-item"><span class="swatch sw-tech"></span><strong>Technical:</strong> Virtual / cross-program</div>
         </div>
-      </div>
-      <div style="display:none;">
-        <div class="uploader-title">Refresh the schedule from a file</div>
-        <div class="upload-row">
-          <input id="fileInput" type="file" accept=".csv,.xlsx,.xls" />
+        <div style="display:none;">
+          <div class="uploader-title">Refresh the schedule from a file</div>
+          <div class="upload-row">
+            <input id="fileInput" type="file" accept=".csv,.xlsx,.xls" />
+          </div>
+          <div class="upload-note">
+            Upload a refreshed workshop list in CSV or Excel format using the same column structure as the current schedule.
+            The page will immediately rebuild the calendar, filters, and hour totals from the uploaded file.
+          </div>
         </div>
-        <div class="upload-note">
-          Upload a refreshed workshop list in CSV or Excel format using the same column structure as the current schedule.
-          The page will immediately rebuild the calendar, filters, and hour totals from the uploaded file.
-        </div>
       </div>
-    </section>
-
-    <section class="controls">
-      <div class="panel">
+      <div class="filters-col">
         <div class="filter-export-row">
           <div class="legend-title filter-export-title">Filter by business unit</div>
           <button type="button" class="nav-btn export-excel-btn" id="exportExcelBtn" title="Download visible workshops as .xlsx">
