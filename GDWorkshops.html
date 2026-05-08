@@ -287,6 +287,11 @@
       font-weight: 800;
       color: var(--accent);
     }
+    .day-cell.outside .day-date-outside {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
 
     .day-total {
       display: inline-flex;
@@ -836,6 +841,33 @@
       return days;
     }
 
+    function isInDisplayedMonth(d, firstOfMonth) {
+      return d.getMonth() === firstOfMonth.getMonth() && d.getFullYear() === firstOfMonth.getFullYear();
+    }
+
+    /** Drop trailing Mon–Fri rows that are entirely outside the viewed month and have no pills (avoids empty June tail on May). */
+    function trimTrailingEmptyOutsideWeeks(workdays, firstOfMonth, byDate, kickIso) {
+      const rows = [];
+      for (let i = 0; i < workdays.length; i += 5) {
+        rows.push(workdays.slice(i, i + 5));
+      }
+      while (rows.length > 0) {
+        const row = rows[rows.length - 1];
+        const allOutside = row.every(d => !isInDisplayedMonth(d, firstOfMonth));
+        const allEmpty = row.every(d => {
+          const iso = d.toISOString().slice(0, 10);
+          const hasWorkshops = byDate[iso] && byDate[iso].length > 0;
+          return !hasWorkshops && iso !== kickIso;
+        });
+        if (allOutside && allEmpty) {
+          rows.pop();
+        } else {
+          break;
+        }
+      }
+      return rows.flat();
+    }
+
     function formatHours(hours) {
       if (Math.abs(hours - Math.round(hours)) < 0.001) return String(Math.round(hours));
       return hours.toFixed(1).replace(/\.0$/, '');
@@ -884,19 +916,20 @@
       currentFilterSubEl.textContent = getFilterSubtext();
 
       const { firstOfMonth, lastOfMonth, gridStart, gridEnd } = getMonthDateRange(activeMonthKey);
-      const workdays = getMonthWorkdays(gridStart, gridEnd);
+      let workdays = getMonthWorkdays(gridStart, gridEnd);
       const byDate = {};
       monthData.forEach(r => {
         if (!byDate[r.dateISO]) byDate[r.dateISO] = [];
         byDate[r.dateISO].push(r);
       });
+      workdays = trimTrailingEmptyOutsideWeeks(workdays, firstOfMonth, byDate, PROJECT_KICKOFF_ISO);
 
       calendarGridEl.innerHTML = '';
       let visibleAny = false;
 
       workdays.forEach(d => {
-        const iso = d.toISOString().slice(0,10);
-        const inMonth = d.getMonth() === firstOfMonth.getMonth();
+        const iso = d.toISOString().slice(0, 10);
+        const inMonth = isInDisplayedMonth(d, firstOfMonth);
         const cell = document.createElement('div');
         cell.className = 'day-cell' + (inMonth ? '' : ' outside');
 
@@ -908,8 +941,14 @@
         name.textContent = d.toLocaleString('en-US', { weekday: 'short' });
 
         const date = document.createElement('div');
-        date.className = 'day-date';
-        date.textContent = d.getDate();
+        date.className = 'day-date' + (inMonth ? '' : ' day-date-outside');
+        if (inMonth) {
+          date.textContent = String(d.getDate());
+        } else {
+          const opts = { month: 'short', day: 'numeric' };
+          if (d.getFullYear() !== firstOfMonth.getFullYear()) opts.year = 'numeric';
+          date.textContent = d.toLocaleString('en-US', opts);
+        }
 
         const dayItems = (byDate[iso] || []).sort((a,b) =>
           a['Business Unit'].localeCompare(b['Business Unit']) || a['Workshop Topic'].localeCompare(b['Workshop Topic'])
