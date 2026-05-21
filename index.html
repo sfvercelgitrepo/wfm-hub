@@ -229,6 +229,12 @@ a.quick-link:hover { color: #fff; }
   padding: 11px 16px; gap: 10px;
 }
 .doc-item:hover { border-color: var(--blue); background: #F0F6FF; }
+a.doc-item {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+a.doc-item:hover .doc-info .dn { color: var(--blue); }
 .doc-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
 .doc-icon { font-size: 16px; flex-shrink: 0; }
 .doc-info .dn { font-size: 13px; font-weight: 700; color: var(--text); }
@@ -609,7 +615,7 @@ const pages = {
       </div>
       <div class="section-block"><h3>Deck Repository</h3>
         <div class="doc-list">
-          <div class="doc-item"><div class="doc-left"><span class="doc-icon">&#128202;</span><div class="doc-info"><div class="dn">Wk 1 Steerco — Kick Off</div><div class="dd">May 11, 2026 &middot; Agenda, goals, governance model</div></div></div><span class="doc-status" style="background:#FEF3E2;color:#B05800">Pending</span></div>
+          <a class="doc-item" href="https://pwc.sharepoint.com/:b:/r/sites/US-ADV-CharterWFMModernization/Shared%20Documents/1.%20Global%20Design/Project%20Management/Kickoff/WFM%20-%20Kickoff.pdf?csf=1&amp;web=1&amp;e=1CXOPc" target="_blank" rel="noopener noreferrer"><div class="doc-left"><span class="doc-icon">&#128202;</span><div class="doc-info"><div class="dn">Wk 1 Steerco — Kick Off</div><div class="dd">May 11, 2026 &middot; Agenda, goals, governance model &middot; Open PDF</div></div></div><span class="doc-status" style="background:#E6F4EC;color:#1E7A3E">Live</span></a>
           <div class="doc-item"><div class="doc-left"><span class="doc-icon">&#128202;</span><div class="doc-info"><div class="dn">Wk 2–17 Decks</div><div class="dd">Template to be distributed Wk 1</div></div></div><span class="doc-status" style="background:#F4E8FE;color:#6B2FA0">Planned</span></div>
         </div>
       </div>
