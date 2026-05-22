@@ -43,6 +43,18 @@ body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text)
   position: relative;
   overflow: hidden;
 }
+.hero-charter-logo {
+  position: absolute;
+  top: 24px;
+  right: 28px;
+  z-index: 3;
+  height: 40px;
+  object-fit: contain;
+  background: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
 .hero-grid {
   display: grid;
   grid-template-columns: 1fr 340px;
@@ -324,7 +336,25 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
 .req-intro { font-size: 12px; line-height: 1.6; color: var(--text); margin-bottom: 14px; }
 .req-intro p { margin: 0 0 8px; }
 .req-bullets { margin: 8px 0 8px 18px; padding: 0; font-size: 12px; line-height: 1.55; }
-.req-table .req-id { white-space: nowrap; font-weight: 700; vertical-align: top; width: 72px; }
+/* ID column — fits 8 characters (R-01, CA-JA-6, G-FP-10, etc.) */
+.task-table.id-table {
+  table-layout: fixed;
+}
+.task-table.id-table th:first-child,
+.task-table.id-table td:first-child,
+.req-table th:first-child,
+.req-table td.req-id,
+.req-table .req-id {
+  white-space: nowrap;
+  vertical-align: top;
+  width: 88px;
+  min-width: 88px;
+  max-width: 88px;
+}
+.task-table.id-table td:first-child,
+.req-table .req-id {
+  font-weight: 700;
+}
 .req-table .req-cat { white-space: nowrap; vertical-align: top; width: 140px; font-size: 11px; }
 .req-table .req-kpi { white-space: nowrap; vertical-align: top; width: 90px; font-size: 11px; }
 .req-table .req-cell { vertical-align: top; line-height: 1.55; max-width: 420px; }
@@ -429,6 +459,7 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
 <div id="home" class="page active">
 
   <div class="hero">
+    <img class="hero-charter-logo" src="https://corporate.charter.com/static/d617519f6e8ec1333149b2e86dd914fb/58aae/Charter_Communications_Logo_Preview_0.jpg" alt="Charter">
     <div class="hero-grid">
       <div class="hero-left">
         <div class="hero-eyebrow">
@@ -445,8 +476,6 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
         </div>
       </div>
       <div class="hero-right">
-        <div class="stat-mini"><div class="n">55<span>tasks</span></div><div class="l">Across 5 phases</div></div>
-        <div class="hero-divider"></div>
         <div class="stat-mini"><div class="n">20+<span>workshops</span></div><div class="l">Design &amp; validation</div></div>
         <div class="hero-divider"></div>
         <div class="stat-mini"><div class="n">6<span>milestones</span></div><div class="l">Including 2 CRP sessions</div></div>
@@ -752,7 +781,7 @@ const pages = {
     desc: 'Active log of project risks and issues. Reviewed weekly at Steerco. Owners responsible for updating status prior to each meeting.',
     body: `<div class="detail-body">
       <div class="section-block"><h3>Active Risks</h3>
-        <table class="task-table"><thead><tr><th>ID</th><th>Risk</th><th>Impact</th><th>Likelihood</th><th>Owner</th><th>Mitigation</th><th>Source</th></tr></thead><tbody>
+        <table class="task-table id-table"><thead><tr><th>ID</th><th>Risk</th><th>Impact</th><th>Likelihood</th><th>Owner</th><th>Mitigation</th><th>Source</th></tr></thead><tbody>
           <tr><td>R-01</td><td>External system dependencies (PTO View, Appointment View, CSG biller) create real-time data sync gaps. During extended IPL outages, systems go out of sync causing work fallout and incorrect timeframes — expected to continue until full SFS consolidation.</td><td>High</td><td>High</td><td>Lynn / Manuel</td><td>Future-state app architecture (WFM Slide Inventory) consolidates AppointmentView, PTOView, FSM into Salesforce WFM — reducing sync points. Define interim IPL-outage runbook for residual external dependencies (Biller, OIS) until full consolidation.</td><td>Day 1 (May 19)</td></tr>
           <tr><td>R-02</td><td>Tight 17-week global design timeline covering three business units (Field Service, Maintenance, Construction) must complete before planned construction/network build-outs. Any design delays will impact go-live readiness.</td><td>High</td><td>Medium</td><td>PwC / Salesforce PM</td><td>Weekly steering, conference room pilots in weeks 13–16 to validate design before sign-off (Week 17). Decision D-05 (Day 1): all 3 BUs designed on common platform simultaneously to avoid sequential rework.</td><td>Day 1 (May 19)</td></tr>
           <tr><td>R-03</td><td>Workforce geographic mismatch — technician headcount is concentrated in areas that no longer reflect where work is located (e.g., 17,000 new passings released in rural Alabama in 9 days with insufficient local techs). Will stress routing and quota capacity logic.</td><td>High</td><td>High</td><td>Lynn / NFS Leadership</td><td>Requirement G-FP-2 (Automated Technician Allocation) and G-FP-3 (Dynamic Quota Forecast Updates) provide system-driven reallocation. Decision D-04 (Day 2): start location calculated from work-order density heat map, not home/depot.</td><td>Day 1 (May 19)</td></tr>
@@ -769,7 +798,7 @@ const pages = {
         </tbody></table>
       </div>
       <div class="section-block"><h3>Open Issues</h3>
-        <table class="task-table"><thead><tr><th>ID</th><th>Issue</th><th>Priority</th><th>Owner</th></tr></thead><tbody>
+        <table class="task-table id-table"><thead><tr><th>ID</th><th>Issue</th><th>Priority</th><th>Owner</th></tr></thead><tbody>
           <tr><td>I-01</td><td>Current routing engine (CSG) does not dynamically adjust estimated completion times when a technician is significantly over on a job, and does not revise downstream dispatch decisions accordingly — causing jobs to be held for over-running technicians unnecessarily.</td><td style="color:#C00000;font-weight:700">High</td><td>Adrian / NFS New York</td></tr>
           <tr><td>I-02</td><td>Quota management is blind to route-criteria sub-zones within a single work zone (e.g., Northern Manhattan split by Central Park). Routers must manually micro-manage technician zone assignments throughout the day to compensate — a major ongoing burden in New York.</td><td style="color:#C00000;font-weight:700">High</td><td>Adrian / NFS New York</td></tr>
           <tr><td>I-03</td><td>Drive-time estimation is unreliable in New York — even Google Maps fails to account for parking time (often 10+ minutes per stop). The current system underestimates drive time, forcing routers to manually maintain multiple route criteria per work zone to protect on-time arrival metrics.</td><td style="color:#C00000;font-weight:700">High</td><td>Adrian / Salesforce (Lior)</td></tr>
@@ -804,7 +833,7 @@ const pages = {
     statusColor: '#6B2FA0', statusBg: '#F4E8FE',
     desc: 'Log of all project decisions made during Steerco, workshops and design sessions. Linked to KDD register where applicable.',
     body: `<div class="detail-body"><div class="section-block"><h3>Decision Log</h3>
-      <table class="task-table"><thead><tr><th>ID</th><th>Decision</th><th>Made By</th><th>Date</th><th>Linked KDD</th></tr></thead><tbody>
+      <table class="task-table id-table"><thead><tr><th>ID</th><th>Decision</th><th>Made By</th><th>Date</th><th>Linked KDD</th></tr></thead><tbody>
           <tr><td>D-01</td><td>Salesforce Field Service will be the single consolidated platform for routing, dispatching, quota/capacity management, and tech absence management — replacing CSG FSM, Appointment View, PTO View, and associated tools. No further evaluation; implementation proceeds.</td><td>NFS Leadership</td><td>May 19, 2026</td><td>—</td></tr>
           <tr><td>D-02</td><td>The FC-level technician ID constraint (technicians tied to a specific FC number) will NOT be carried forward to Salesforce. Each technician will have a single global ID. Relocation between regions requires only a configuration change, not a rebuild.</td><td>Manuel / PwC Architects</td><td>May 19, 2026</td><td>—</td></tr>
           <tr><td>D-03</td><td>Technician 'available' status should be system-driven, not self-selected. The system dispatches the next job; technicians only indicate lunch or log-off. Clock-in guardrails (15-min pre-shift window) will be built in Salesforce, not in Tech Mobile.</td><td>Manuel / PwC / Salesforce</td><td>May 19, 2026</td><td>—</td></tr>
@@ -947,7 +976,7 @@ Administrative – Internal, Administrative - External</p></td></tr>
         </div>
       </div>
       <div class="section-block"><h3>KDD Register</h3>
-        <table class="task-table"><thead><tr><th>KDD ID</th><th>Decision Area</th><th>Description</th><th>Category</th><th>Status</th><th>Week</th></tr></thead><tbody>
+        <table class="task-table id-table"><thead><tr><th>KDD ID</th><th>Decision Area</th><th>Description</th><th>Category</th><th>Status</th><th>Week</th></tr></thead><tbody>
           <tr><td colspan="6" style="text-align:center;color:#888;padding:20px">KDD entries will be populated starting Wk 3 from Fit-to-Standard workshops.</td></tr>
         </tbody></table>
       </div>
@@ -964,7 +993,7 @@ Administrative – Internal, Administrative - External</p></td></tr>
     statusColor: '#6B2FA0', statusBg: '#F4E8FE',
     desc: 'Log of all gaps identified during Fit-to-Standard workshops and their agreed remediation approach (configuration vs. customization).',
     body: `<div class="detail-body"><div class="section-block"><h3>Gap Log</h3>
-      <table class="task-table"><thead><tr><th>ID</th><th>Capability</th><th>Gap Description</th><th>Type</th><th>Resolution</th><th>Owner</th><th>Status</th></tr></thead><tbody>
+      <table class="task-table id-table"><thead><tr><th>ID</th><th>Capability</th><th>Gap Description</th><th>Type</th><th>Resolution</th><th>Owner</th><th>Status</th></tr></thead><tbody>
         <tr><td colspan="7" style="text-align:center;color:#888;padding:20px">Gap entries will be populated from F2S sessions beginning Wk 4.</td></tr>
       </tbody></table>
     </div></div>`

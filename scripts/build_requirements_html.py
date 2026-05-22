@@ -302,7 +302,20 @@ def patch_index():
 .req-intro { font-size: 12px; line-height: 1.6; color: var(--text); margin-bottom: 14px; }
 .req-intro p { margin: 0 0 8px; }
 .req-bullets { margin: 8px 0 8px 18px; padding: 0; font-size: 12px; line-height: 1.55; }
-.req-table .req-id { white-space: nowrap; font-weight: 700; vertical-align: top; width: 72px; }
+.task-table.id-table { table-layout: fixed; }
+.task-table.id-table th:first-child,
+.task-table.id-table td:first-child,
+.req-table th:first-child,
+.req-table td.req-id,
+.req-table .req-id {
+  white-space: nowrap;
+  vertical-align: top;
+  width: 88px;
+  min-width: 88px;
+  max-width: 88px;
+}
+.task-table.id-table td:first-child,
+.req-table .req-id { font-weight: 700; }
 .req-table .req-cat { white-space: nowrap; vertical-align: top; width: 140px; font-size: 11px; }
 .req-table .req-kpi { white-space: nowrap; vertical-align: top; width: 90px; font-size: 11px; }
 .req-table .req-cell { vertical-align: top; line-height: 1.55; max-width: 420px; }
