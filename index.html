@@ -143,6 +143,7 @@ body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text)
 .badge-draft { background: #FEF3E2; color: #B05800; }
 .badge-final { background: #E6F4EC; color: #1E7A3E; }
 .badge-wip   { background: #F4E8FE; color: #6B2FA0; }
+.badge-construction { background: #FDE8E8; color: #A32D2D; }
 .cat-link .arrow { font-size: 11px; color: var(--muted); flex-shrink: 0; }
 .cat-link:hover .arrow { color: var(--blue); }
 
@@ -441,8 +442,8 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
     </div>
     <div class="status-bar">
       <div class="status-item"><span class="status-dot" style="background:#4CAF50"></span><div><div class="sl">Phase</div><div class="sv">1 — Current State Validation</div></div></div>
-      <div class="status-item"><span class="status-dot" style="background:#2E8DE0"></span><div><div class="sl">Next Milestone</div><div class="sv">Global Design Kick Off — Wk 1</div></div></div>
-      <div class="status-item"><span class="status-dot" style="background:#E8712A"></span><div><div class="sl">Project Lead</div><div class="sv">Gregg Cory / Noel Dempsey (PwC)</div></div></div>
+      <div class="status-item"><span class="status-dot" style="background:#2E8DE0"></span><div><div class="sl">Next Milestone</div><div class="sv">Current and Future-State Architecture Workshop - Week 1</div></div></div>
+      <div class="status-item"><span class="status-dot" style="background:#E8712A"></span><div><div class="sl">Project Lead</div><div class="sv">Thiru Valliapan / Keyur Patel</div></div></div>
       <div class="status-item"><span class="status-dot" style="background:#C9A800"></span><div><div class="sl">Steerco Cadence</div><div class="sv">Weekly — All 17 Weeks</div></div></div>
     </div>
   </div>
@@ -450,7 +451,6 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
   <div class="quick-bar">
     <span>Quick links:</span>
     <div class="quick-link" onclick="nav('project-plan')">&#128197; Project Plan (Gantt)</div>
-    <div class="quick-link" onclick="nav('kdd-log')">&#9878; KDD Register</div>
     <div class="quick-link" onclick="nav('risk-log')">&#9888; Risk Log</div>
     <div class="quick-link" onclick="nav('steerco')">&#128101; Steerco Decks</div>
     <div class="quick-link" onclick="nav('integration-arch')">&#128268; Integration Architecture</div>
@@ -505,9 +505,9 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
         <div class="cat-links">
           <div class="cat-link" onclick="nav('requirements')"><div class="link-left"><span class="link-icon">&#128196;</span><span class="link-text">Requirements Inventory</span></div><span class="link-badge badge-wip">WIP</span><span class="arrow">&#8250;</span></div>
           <div class="cat-link" onclick="nav('kdd-log')"><div class="link-left"><span class="link-icon">&#9878;</span><span class="link-text">Key Design Decisions (KDD)</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
-          <div class="cat-link" onclick="nav('gap-log')"><div class="link-left"><span class="link-icon">&#128270;</span><span class="link-text">Gap Remediation Log</span></div><span class="link-badge badge-wip">WIP</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('gap-log')"><div class="link-left"><span class="link-icon">&#128270;</span><span class="link-text">Gap Remediation Log</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
           <div class="cat-link" onclick="nav('workshop-outputs')"><div class="link-left"><span class="link-icon">&#128218;</span><span class="link-text">Workshop Outputs &amp; Decisions</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
-          <div class="cat-link" onclick="nav('backlog')"><div class="link-left"><span class="link-icon">&#128085;</span><span class="link-text">Prioritized Backlog</span></div><span class="link-badge badge-new">New</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('backlog')"><div class="link-left"><span class="link-icon">&#128085;</span><span class="link-text">Prioritized Backlog</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
         </div>
       </div>
 
@@ -521,11 +521,11 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
           </div>
         </div>
         <div class="cat-links">
-          <div class="cat-link" onclick="nav('integration-arch')"><div class="link-left"><span class="link-icon">&#128268;</span><span class="link-text">Integration Architecture</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
-          <div class="cat-link" onclick="nav('data-model')"><div class="link-left"><span class="link-icon">&#128451;</span><span class="link-text">Data Model &amp; Master Data</span></div><span class="link-badge badge-wip">WIP</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('integration-arch')"><div class="link-left"><span class="link-icon">&#128268;</span><span class="link-text">Integration Architecture</span></div><span class="link-badge badge-wip">WIP</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('data-model')"><div class="link-left"><span class="link-icon">&#128451;</span><span class="link-text">Data Model &amp; Master Data</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
           <div class="cat-link" onclick="nav('devops')"><div class="link-left"><span class="link-icon">&#9881;</span><span class="link-text">DevOps &amp; Environment Strategy</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
-          <div class="cat-link" onclick="nav('security')"><div class="link-left"><span class="link-icon">&#128274;</span><span class="link-text">Security &amp; Access Model</span></div><span class="link-badge badge-new">New</span><span class="arrow">&#8250;</span></div>
-          <div class="cat-link" onclick="nav('tech-arch')"><div class="link-left"><span class="link-icon">&#128190;</span><span class="link-text">Technical Architecture Doc</span></div><span class="link-badge badge-wip">WIP</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('security')"><div class="link-left"><span class="link-icon">&#128274;</span><span class="link-text">Security &amp; Access Model</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('tech-arch')"><div class="link-left"><span class="link-icon">&#128190;</span><span class="link-text">Technical Architecture Doc</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
         </div>
       </div>
 
@@ -539,10 +539,10 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
           </div>
         </div>
         <div class="cat-links">
-          <div class="cat-link" onclick="nav('stakeholder-map')"><div class="link-left"><span class="link-icon">&#128100;</span><span class="link-text">Stakeholder Map &amp; Impact Log</span></div><span class="link-badge badge-wip">WIP</span><span class="arrow">&#8250;</span></div>
-          <div class="cat-link" onclick="nav('comms-plan')"><div class="link-left"><span class="link-icon">&#128172;</span><span class="link-text">Communications Plan</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
-          <div class="cat-link" onclick="nav('training-plan')"><div class="link-left"><span class="link-icon">&#127891;</span><span class="link-text">Training Plan</span></div><span class="link-badge badge-new">New</span><span class="arrow">&#8250;</span></div>
-          <div class="cat-link" onclick="nav('persona-model')"><div class="link-left"><span class="link-icon">&#128084;</span><span class="link-text">Persona Model Definition</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('stakeholder-map')"><div class="link-left"><span class="link-icon">&#128100;</span><span class="link-text">Stakeholder Map &amp; Impact Log</span></div><span class="link-badge badge-construction">Under Construction</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('comms-plan')"><div class="link-left"><span class="link-icon">&#128172;</span><span class="link-text">Communications Plan</span></div><span class="link-badge badge-construction">Under Construction</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('training-plan')"><div class="link-left"><span class="link-icon">&#127891;</span><span class="link-text">Training Plan</span></div><span class="link-badge badge-construction">Under Construction</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('persona-model')"><div class="link-left"><span class="link-icon">&#128084;</span><span class="link-text">Persona Model Definition</span></div><span class="link-badge badge-construction">Under Construction</span><span class="arrow">&#8250;</span></div>
         </div>
       </div>
 
@@ -556,10 +556,10 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
           </div>
         </div>
         <div class="cat-links">
-          <div class="cat-link" onclick="nav('resource-mgmt')"><div class="link-left"><span class="link-icon">&#128101;</span><span class="link-text">Resource Management Design</span></div><span class="link-badge badge-wip">WIP</span><span class="arrow">&#8250;</span></div>
-          <div class="cat-link" onclick="nav('schedule-dispatch')"><div class="link-left"><span class="link-icon">&#128506;</span><span class="link-text">Schedule &amp; Dispatch Design</span></div><span class="link-badge badge-wip">WIP</span><span class="arrow">&#8250;</span></div>
-          <div class="cat-link" onclick="nav('quota-mgmt')"><div class="link-left"><span class="link-icon">&#128202;</span><span class="link-text">Quota Management Design</span></div><span class="link-badge badge-wip">WIP</span><span class="arrow">&#8250;</span></div>
-          <div class="cat-link" onclick="nav('bu-field-service')"><div class="link-left"><span class="link-icon">&#128295;</span><span class="link-text">Field Service BU Track</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('resource-mgmt')"><div class="link-left"><span class="link-icon">&#128101;</span><span class="link-text">Resource Management Design</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('schedule-dispatch')"><div class="link-left"><span class="link-icon">&#128506;</span><span class="link-text">Schedule &amp; Dispatch Design</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('quota-mgmt')"><div class="link-left"><span class="link-icon">&#128202;</span><span class="link-text">Quota Management Design</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('bu-field-service')"><div class="link-left"><span class="link-icon">&#128295;</span><span class="link-text">Field Service BU Track</span></div><span class="link-badge badge-wip">WIP</span><span class="arrow">&#8250;</span></div>
           <div class="cat-link" onclick="nav('bu-maintenance')"><div class="link-left"><span class="link-icon">&#128736;</span><span class="link-text">Maintenance BU Track</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
           <div class="cat-link" onclick="nav('bu-construction')"><div class="link-left"><span class="link-icon">&#127959;</span><span class="link-text">Construction BU Track</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
         </div>
@@ -575,10 +575,10 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
           </div>
         </div>
         <div class="cat-links">
-          <div class="cat-link" onclick="nav('crp1')"><div class="link-left"><span class="link-icon">&#128247;</span><span class="link-text">CRP1 — Scenarios &amp; Findings</span></div><span class="link-badge badge-new">New</span><span class="arrow">&#8250;</span></div>
-          <div class="cat-link" onclick="nav('crp2')"><div class="link-left"><span class="link-icon">&#128247;</span><span class="link-text">CRP2 — Scenarios &amp; Findings</span></div><span class="link-badge badge-new">New</span><span class="arrow">&#8250;</span></div>
-          <div class="cat-link" onclick="nav('solution-signoff')"><div class="link-left"><span class="link-icon">&#9997;</span><span class="link-text">Solution Signoff Package</span></div><span class="link-badge badge-new">New</span><span class="arrow">&#8250;</span></div>
-          <div class="cat-link" onclick="nav('req-signoff')"><div class="link-left"><span class="link-icon">&#128209;</span><span class="link-text">Business Requirements Signoff</span></div><span class="link-badge badge-new">New</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('crp1')"><div class="link-left"><span class="link-icon">&#128247;</span><span class="link-text">CRP1 — Scenarios &amp; Findings</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('crp2')"><div class="link-left"><span class="link-icon">&#128247;</span><span class="link-text">CRP2 — Scenarios &amp; Findings</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('solution-signoff')"><div class="link-left"><span class="link-icon">&#9997;</span><span class="link-text">Solution Signoff Package</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('req-signoff')"><div class="link-left"><span class="link-icon">&#128209;</span><span class="link-text">Business Requirements Signoff</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
         </div>
       </div>
 
@@ -592,9 +592,9 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
           </div>
         </div>
         <div class="cat-links">
-          <div class="cat-link" onclick="nav('reporting')"><div class="link-left"><span class="link-icon">&#128200;</span><span class="link-text">Reporting Requirements</span></div><span class="link-badge badge-wip">WIP</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('reporting')"><div class="link-left"><span class="link-icon">&#128200;</span><span class="link-text">Reporting Requirements</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
           <div class="cat-link" onclick="nav('kpi-framework')"><div class="link-left"><span class="link-icon">&#127919;</span><span class="link-text">KPI Framework</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
-          <div class="cat-link" onclick="nav('dashboard-design')"><div class="link-left"><span class="link-icon">&#128243;</span><span class="link-text">Dashboard Design Specs</span></div><span class="link-badge badge-new">New</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('dashboard-design')"><div class="link-left"><span class="link-icon">&#128243;</span><span class="link-text">Dashboard Design Specs</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
         </div>
       </div>
 
@@ -608,8 +608,8 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
           </div>
         </div>
         <div class="cat-links">
-          <div class="cat-link" onclick="nav('ai-setup')"><div class="link-left"><span class="link-icon">&#9881;</span><span class="link-text">AI Workflow Configuration</span></div><span class="link-badge badge-wip">WIP</span><span class="arrow">&#8250;</span></div>
-          <div class="cat-link" onclick="nav('ai-tools')"><div class="link-left"><span class="link-icon">&#129302;</span><span class="link-text">AI Tools &amp; Use Cases</span></div><span class="link-badge badge-final">Live</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('ai-setup')"><div class="link-left"><span class="link-icon">&#9881;</span><span class="link-text">AI Workflow Configuration</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
+          <div class="cat-link" onclick="nav('ai-tools')"><div class="link-left"><span class="link-icon">&#129302;</span><span class="link-text">AI Tools &amp; Use Cases</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
           <div class="cat-link" onclick="nav('skill-library')"><div class="link-left"><span class="link-icon">&#128218;</span><span class="link-text">Skill Library (S3 / Git)</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
         </div>
       </div>
@@ -619,6 +619,20 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
     <!-- Announcements -->
     <h2>Announcements &amp; Updates</h2>
     <div class="announce-list">
+      <div class="announce-item">
+        <div class="announce-dot" style="background:#4CAF50"></div>
+        <div class="announce-body">
+          <div class="at">May 20, 2026 &middot; Functional</div>
+          <div class="am">Field Service Current State Workshops Completed</div>
+        </div>
+      </div>
+      <div class="announce-item">
+        <div class="announce-dot" style="background:#1A6FBF"></div>
+        <div class="announce-body">
+          <div class="at">May 20, 2026 &middot; Functional</div>
+          <div class="am">Construction and Maintenance Workshops planned for June 1 week</div>
+        </div>
+      </div>
       <div class="announce-item">
         <div class="announce-dot" style="background:#4CAF50"></div>
         <div class="announce-body">
@@ -693,7 +707,7 @@ const pages = {
         <div class="info-grid">
           <div class="info-card"><div class="ic-label">Frequency</div><div class="ic-val">Weekly</div><div class="ic-sub">All 17 weeks</div></div>
           <div class="info-card"><div class="ic-label">Format</div><div class="ic-val">60 min</div><div class="ic-sub">Status + decisions</div></div>
-          <div class="info-card"><div class="ic-label">Facilitator</div><div class="ic-val">PwC PM</div><div class="ic-sub">Gregg Cory</div></div>
+          <div class="info-card"><div class="ic-label">Facilitator</div><div class="ic-val">PwC PM</div><div class="ic-sub">Sriprasanna Mohan</div></div>
           <div class="info-card"><div class="ic-label">Deck Owner</div><div class="ic-val">PMO</div><div class="ic-sub">Due: Mon COB</div></div>
         </div>
       </div>
@@ -894,8 +908,8 @@ const pages = {
     owner: 'TBD (Integration Architect)',
     email: 'integration-arch@charter.com',
     updated: 'Apr 24, 2026',
-    status: 'Draft',
-    statusColor: '#B05800', statusBg: '#FEF3E2',
+    status: 'WIP',
+    statusColor: '#6B2FA0', statusBg: '#F4E8FE',
     desc: 'End-to-end integration architecture for Salesforce FSL across Charter\'s dispatch, scheduling, and billing platforms including CSG, PeakView, and EDGE systems.',
     body: `<div class="detail-body">
       <div class="section-block"><h3>Systems in Scope</h3>
@@ -1153,8 +1167,8 @@ const pages = {
     owner: 'Thomas Brunette / Lynn Brzozka',
     email: 'fs-bu@charter.com',
     updated: 'Apr 24, 2026',
-    status: 'Draft',
-    statusColor: '#B05800', statusBg: '#FEF3E2',
+    status: 'WIP',
+    statusColor: '#6B2FA0', statusBg: '#F4E8FE',
     desc: 'Field Service BU-specific design track covering job types, WO lifecycle, dispatch/optimization, and quota/shift planning for Residential, SMB, and Enterprise customers.',
     body: `<div class="detail-body"><div class="section-block"><h3>FS Design Topics</h3>
       <div class="doc-list">
@@ -1403,6 +1417,12 @@ const pages = {
   },
 };
 
+Object.values(pages).forEach(function (p) {
+  p.owner = 'Thiru Valliapan / Keyur Patel';
+  p.email = 'kpatel@pwc.com';
+  p.updated = 'May 21, 2026';
+});
+
 /* ─── Hub link search ─────────────────────────────────────────── */
 function escapeHtml(value) {
   return String(value)
@@ -1597,9 +1617,9 @@ const GP = {
   ],
   tasks: [
     {num:1, ph:'1',phn:'Current State',task:'Global Design Kick Off',owner:'PwC + Charter Leads',prio:'HIGH',wks:[1,1],bar:'milestone',notes:'Align all stakeholders; set cadence & governance'},
-    {num:2, ph:'1',phn:'Current State',task:'BU Stakeholder Interviews — Field Service',owner:'FSL Functional Lead + FS BU Lead',prio:'HIGH',wks:[1,3],bar:'active',notes:'Leverage existing PwC engagements (FSL Automation, Uber, Quota LB)'},
-    {num:3, ph:'1',phn:'Current State',task:'BU Stakeholder Interviews — Maintenance',owner:'FSL Functional Lead + Maintenance Lead',prio:'HIGH',wks:[1,3],bar:'active',notes:'Capture regional variation across BUs'},
-    {num:4, ph:'1',phn:'Current State',task:'BU Stakeholder Interviews — Construction',owner:'FSL Functional Lead + Construction Lead',prio:'HIGH',wks:[1,3],bar:'active',notes:'Capture regional variation across BUs'},
+    {num:2, ph:'1',phn:'Current State',task:'BU Stakeholder Interviews — Field Service',owner:'FSL Functional Lead + FS BU Lead',prio:'HIGH',wks:[2,2],bar:'active',notes:'Leverage existing PwC engagements (FSL Automation, Uber, Quota LB)'},
+    {num:3, ph:'1',phn:'Current State',task:'BU Stakeholder Interviews — Maintenance',owner:'FSL Functional Lead + Maintenance Lead',prio:'HIGH',wks:[4,4],bar:'active',notes:'Capture regional variation across BUs'},
+    {num:4, ph:'1',phn:'Current State',task:'BU Stakeholder Interviews — Construction',owner:'FSL Functional Lead + Construction Lead',prio:'HIGH',wks:[4,4],bar:'active',notes:'Capture regional variation across BUs'},
     {num:5, ph:'1',phn:'Current State',task:'System & Integration Mapping Sessions',owner:'Integration Architect + IT SMEs',prio:'HIGH',wks:[1,3],bar:'active',notes:'Map dispatch, scheduling, billing platforms (CSG, PeakView, EDGE)'},
     {num:6, ph:'1',phn:'Current State',task:'Master Data Inventory',owner:'Data Architect + Data SMEs',prio:'HIGH',wks:[1,3],bar:'active',notes:'Identify data entities, ownership, quality gaps'},
     {num:7, ph:'1',phn:'Current State',task:'Requirements Inventory (initial)',owner:'FSL BAs + Charter IT Lead',prio:'MED',wks:[2,4],bar:'active',notes:'Seed backlog with known requirements from current state'},
