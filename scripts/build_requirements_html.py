@@ -66,6 +66,16 @@ def fs_req_row(rid, cat, title, body, example, kpi):
     )
 
 
+def bu_ex_req_row(rid, cat, title, body, example):
+    return (
+        f'<tr><td class="req-id">{html.escape(rid)}</td>'
+        f'<td class="req-cat">{html.escape(cat)}</td>'
+        f'<td class="req-cell"><span class="req-title">{html.escape(title)}</span>'
+        f"{bullets_to_html(body)}</td>"
+        f'<td class="req-cell">{bullets_to_html(example)}</td></tr>'
+    )
+
+
 GENERAL_REQS = [
     ("G-FP-1", "Forecasting and Planning", "Future Quota Forecasting Based on Expected Work Volumes",
      "The system shall implement a forecasting capability to predict future quota requirements based on anticipated work volumes. This feature aims to ensure adequate allocation of technicians in each region for upcoming days, aligning workforce availability with projected service demands.\n•\tImplement an algorithm to calculate the necessary quota of technicians required to meet the forecasted work volumes, ensuring sufficient coverage in each region.\n•\tThe platform must accommodate scenarios where unexpected fluctuations in work volumes occur, providing alerts and recommendations for quota adjustments."),
@@ -164,6 +174,63 @@ FS_REQS = [
      ""),
 ]
 
+MAINT_REQS = [
+    ("M-JA-1", "Job Allocation and Scheduling", "Bi-directional integration for real-time work order updates",
+     "The system shall maintain a bi-directional & real-time, integration with the work order system of record (Lighthouse):\n\u2022\tWork Order Initiation: All maintenance work orders shall be initiated from Lighthouse, and integrated into WFM\n\u2022\tWork Order Priority: Work order priority will be generated and updated in Lighthouse and sent to WFM on a regular basis (i.e., real time via Kafka feed or other applicable method)\n\u2022\tWork Order Status: Lighthouse should be able to update work order status (e.g. cancelling them for example if they are no longer needed), and WFM platform should send real-time updates regarding work order statuses to Lighthouse, as the work order lifecycle progresses",
+     "Lighthouse uses telemetry to raise alarms as needed. As an example, Lighthouse can detect an outage and automatically generate a work order for it.\nLighthouse re-evaluates the priority score (WOPR) of a work order every 5 minutes. Upon every re-evaluation, the score is integrated to WFM.\nAs the tech is updating the Work Order status, WFM is sending real time status updates back to Lighthouse."),
+    ("M-JA-2", "Job Allocation and Scheduling", "Ability to Pause Jobs",
+     "The system shall support work orders being paused due to a different number of possible reasons and have automations in place to handle paused jobs:\n\u2022\tPause Reasons: the system should support \u201cpause\u201d reasons such as Hold for Higher Priority Work, Awaiting Parts, Local Site Access Required, Third Party Vendor Action Required, No Access, Deferred to Maintenance Window, End of Shift\n\u2022\tAutomations: depending on the pause reason, automations should be in place to unassign the work from the technician (either immediately or after some configurable time), automatically set the work order to another status, or route the work to technicians holding a specific title or shift configuration",
+     "A technician determines that a node needs to be shut down temporarily to resolve a work order. To minimize impact to existing customers on the node, the technician defers the work order to a nightly crew."),
+    ("M-JA-3", "Job Allocation and Scheduling", "Support for Multiple Active Work Orders on a Node",
+     "The system shall allow for single node to have multiple active work orders concurrently\n\u2022\tMulti-Work Order: Each node can have multiple active work orders at the same time, and those work orders can be assigned to different technicians",
+     "A node for a designated geographical area has several work orders associated with it."),
+    ("M-RO-1", "Routing Optimization", "Assigning Urgent Work to Technician",
+     "The system shall be capable of assigning urgent tasks to technicians who are currently engaged in ongoing work\n\u2022\tUrgent Task Allocation: The platform shall support the allocation of urgent tasks to technicians who are actively working on existing jobs, allowing for the prioritization of critical work.\n\u2022\tAssignment Logic: The system must evaluate the technician's current work and its priority, as well as proximity to the urgent task location to optimize assignment decisions.\n\u2022\tOverriding Logic: The system should be able to have rules for overriding existing work with higher priority work which should be used to determine if and override is needed and what specific override cases are allowed",
+     "A ROC detects that an outage needs to be addressed in node A, so they assign work to a tech who is working on lower priority work."),
+    ("M-RO-2", "Routing Optimization", "Re-Assignment of Pended Maintenance Work",
+     "The system shall implement logic to keep paused tasks assigned to the same technician and automatically reassign them if a specified threshold of time has passed since the task was paused.\n\u2022\tWork Continuity: The system shall retain paused tasks with the originally assigned technician, maintaining continuity in task management\n\u2022\tTracking Pauses: The platform must track the duration of task pauses, providing visibility into the time elapsed since the task was paused\n\u2022\tReassignment Logic: Implement logic to automatically reassign paused tasks to the next available technician if the pause duration exceeds a predefined threshold (e.g., 2 hours), prioritizing reassignment based on technician availability, skill match, and proximity to the task location",
+     "A technician working on a job is notified that a critical outage needs to be addressed. The tech then pauses the current work order and heads to the outage to resolve it. Once complete with the outage work order, the tech resumes work on the work order that had been paused."),
+    ("M-FP-1", "Forecasting and Planning", "Supporting Different Shift Types for Regular or On-Call Work",
+     "The system shall support different shift types, specifically enabling technicians to be available for on-call duties outside their regular work shifts\n\u2022\tOn-Call Scheduling: The platform must allow for the scheduling of technicians to be on call during specified time slots outside their regular shift hours.\n\u2022\tJob Assignment for On-Call Shifts: The WFM platform should be able to assign jobs to technicians which are \u201cOn call\u201d\n\u2022\tShift-Based Work Area Assignment: Allow administrators to configure and assign different work areas for technicians based on their shift type (regular vs. on-call).",
+     "Technicians may have a designated timeframe where they are \u201con-call\u201d \u2013 meaning that they can be called upon to resolve an urgent issue outside of their normal shift hours."),
+    ("M-FP-2", "Forecasting and Planning", "Technician team creation",
+     "The system shall allow for the creation, modification, and deletion of technician teams.\n\u2022\tEach team should have attributes such as team name, team leader, etc\n\u2022\tEach technician can be assigned to one or more teams\n\u2022\tThe team\u2019s node coverage is determined by the nodes of all the technicians combined\n\u2022\tA visual dashboard should be available for easy configuration of different teams\n\u2022\tTeams should be visually displayed and selectable for routing purposes",
+     "An administrator can create a team of technicians within the system. The team has a roster of technicians and a list of attributes such as: team name, team leader, etc. A dashboard shows a list of teams for the ROC agents."),
+    ("M-TS-1", "Technician Status", "Technician Record \u2013 Day of Job dashboard",
+     "The system shall present a dashboard of all active techs and present alerts for specific conditions such as length of time on job, length of time off job, significant location change, etc\n\u2022\tDetailed Documentation: A dashboard user may add \u201cnotes\u201d to an alert so other users who see the same alert can read the prior comments and add as needed",
+     "A back office agent observes that a technician has been in \u201cin progress\u201d status longer than anticipated. The agent reaches out to the technician to discuss the inconsistencies and then appends a note to the technician / work order record documenting their conversation and with a timestamp."),
+]
+
+CONST_REQS = [
+    ("C-JA-1", "Job Allocation and Scheduling", "Construction Survey Distribution",
+     "The system shall allow for efficiently managing and distributing construction surveys to designated construction coordinators:\n\u2022\tAuto-routing: Route surveys to coordinators based on predefined criteria such as the geographic location of the construction coordinator, project type, survey type (desktop or on-site) or coordinator skills\n\u2022\tMultiple assignments: Allow for the construction coordinators to receive and see multiple surveys (as opposed to taking care of them one by one)",
+     "Multiple surveys are created, and each of them is automatically assigned to a construction coordinator that meets the job criteria."),
+    ("C-JA-2", "Job Allocation and Scheduling", "Tracking Construction Coordinator Activities",
+     "The system shall formally track the activities of construction coordinators, such as regular on-site check-in visits and technical quality assurance (TQA) inspections.\n\u2022\tDifferent work types: Have different work types for these (on-site check-in visits, TQA inspections, etc), and enable these work items to be completed formally in the system, with fields such as assignee, due date, start and end date\n\u2022\tStatus updates: Sync the status of these items back to PRISM",
+     "On-site check-in visits and TQA inspections should be tracked in WFM \u2013 nowadays they are all done offline and done up to the discretion of the construction coordinator.\n\nExamples of coordinator tasks include Surveys,\nSite Visits, TQA,\nAdministrative \u2013 Internal, Administrative - External"),
+    ("C-JA-3", "Job Allocation and Scheduling", "Automated Scheduling of Construction Coordinator Tasks",
+     "The system shall have functionality to automatically create work and assign it to a construction coordinator\n\u2022\tAuto-generated work: Some work (such as on-site check-in visits, TQA inspections, etc) should be automatically created and triggered based on parameters such as \u201cFrequency of check-ins\u201d, or \u201cProject type\u201d\n\u2022\tAuto-assignment: Once work is created, it should automatically be assigned to the construction coordinator assigned to the project (or based on availability, if multiple coordinators can take that task)",
+     "Instead of being up to the discretion of the coordinator (as it is today), regular on-site visits and inspections should be scheduled for greater visibility and control over the work being done."),
+    ("C-JA-4", "Job Allocation and Scheduling", "Construction Coordinator Project Assignment",
+     "The system shall provide automatic assignment capabilities for mapping a construction coordinator to a project\n\u2022\tAssignment criteria: Project assignments to construction coordinators should be done based on different criteria, but mainly ZIP code\n\u2022\tWorkload balancing: Assignment should take into consideration current workload from the coordinator, and coordinators can be mapped to multiple projects at the same time\n\u2022\tManual intervention: Overriding the assignment manually should be possible, and controlled via RBAC (role based access controls) so that only construction supervisors can do this",
+     "As soon as a new construction project starts, it can be routed to a construction coordinator that covers the area and is able to lead that project."),
+    ("C-JA-5", "Job Allocation and Scheduling", "PRISM to remain as the system of record for work orders",
+     "The system shall receive work orders or tasks, always having PRISM as the source of record for construction work orders\n\u2022\tSource in PRISM: Projects are triggered in PRISM, which then will trigger work such as Surveys and Construction work\nThese work items then need to be integrated to WFM for routing and dispatching",
+     "A new survey request is created in PRISM, which then gets automatically integrated to WFM for routing and dispatching."),
+    ("CA-JA-6", "Job Allocation and Scheduling", "Ability to see availability for walkout scheduling",
+     "The system shall enable the user talking to a customer to immediately see available timeslots for scheduling a walkout to the construction site.\n\u2022\tVisualizing Appointment slots: User should be able to visually pick and choose a walkout timeslot from a list of available times\n\u2022\tRouting Walkout: upon selecting the timeslot, the walkout should automatically be routed to the appropriate construction coordinators",
+     "A Charter representative is talking to a customer, to agree on a time for a walkout. At present, an immediate agreement cannot be achieved, since the representative can\u2019t yet see the availability of construction coordinators."),
+    ("C-FP-1", "Forecasting and Planning", "Mapping Construction Coordinators and Supervisors to ZIP Codes or Work Areas",
+     "The system shall enable for construction coordinators to be assigned to one or more ZIP codes or Work Areas\n\u2022\tGeographical assignment: The platform must provide functionality to map construction coordinators and supervisors to designated ZIP codes or Work Areas\n\u2022\tVisualizations: Provide visualization tools, such as maps, to clearly depict coverage areas and personnel assignments",
+     "Construction coordinators cover different ZIP codes / work areas, depending on their geographical location."),
+    ("C-FP-2", "Forecasting and Planning", "Construction Coordinator Profile Management",
+     "The system shall enable the management of construction coordinators.\n\u2022\tProfile configuration: Coordinators can have different profile fields or properties such as work area ownership, skills, shift configurations, contact information, etc\n\u2022\tRouting and dispatching logic: Routing and dispatching logic should consider the coordinators\u2019 profiles (e.g. skills, availability) when assigning different work",
+     "A construction coordinator\u2019s profile can be set up in WFM, with the appropriate skills and shift configuration."),
+    ("C-TS-1", "Technician Status", "Receive status updates from construction coordinator",
+     "The system shall be able to receive status updates from the Construction coordinator in the field\n\u2022\tMultiple statuses: Status might include \u201cBreak\u201d, \u201cOn-site\u201d, etc\n\u2022\tRouting and dispatching logic: Routing should consider statuses to perform new work assignments (for example not assigning work when the tech is on \u201cBreak\u201d)",
+     "As the coordinator proceeds with his tasks, they will status themselves in the field work platform \u2013 and the status should flow back to WFM."),
+]
+
 
 def build_coverage_html() -> str:
     intro_wfm = (
@@ -181,9 +248,17 @@ def build_coverage_html() -> str:
     intro_fs = (
         "The WFM requirements that are specifically tailored to the Field Service area, addressing unique operational needs and enhancing technician management, routing, and service delivery are detailed below."
     )
+    intro_maint = (
+        "WFM system requirements for the Maintenance area, emphasizing seamless integration with the Lighthouse work order system for real-time updates and management. The system supports job deferral, reassignment, multiple active work orders, and urgent task allocation, while enhancing technician management with features like on-call scheduling, team configuration, and a dashboard for tracking and documenting technician activities."
+    )
+    intro_const = (
+        "The WFM system requirements specific to the Construction area focus on the efficient distribution and management of construction surveys, automated scheduling of tasks, and assignment of coordinators to projects based on geographic and workload criteria. It emphasizes seamless integration with PRISM for work order management, comprehensive profile management, and real-time status updates to optimize routing and dispatching processes."
+    )
 
     general_rows = "\n".join(req_cell(*r) for r in GENERAL_REQS)
     fs_rows = "\n".join(fs_req_row(*r) for r in FS_REQS)
+    maint_rows = "\n".join(bu_ex_req_row(*r) for r in MAINT_REQS)
+    const_rows = "\n".join(bu_ex_req_row(*r) for r in CONST_REQS)
 
     return f"""      <div class="section-block"><h3>Coverage by Capability</h3>
         <h4 class="req-h4">WFM Requirements</h4>
@@ -198,6 +273,16 @@ def build_coverage_html() -> str:
         <table class="task-table req-table"><thead><tr><th>ID</th><th>Category</th><th>Requirement</th><th>Example</th><th>KPI affected</th></tr></thead><tbody>
 {fs_rows}
         </tbody></table>
+        <h4 class="req-h4">Maintenance Requirements</h4>
+        <div class="req-intro"><p>{html.escape(intro_maint)}</p></div>
+        <table class="task-table req-table"><thead><tr><th>ID</th><th>Category</th><th>Requirement</th><th>Example</th></tr></thead><tbody>
+{maint_rows}
+        </tbody></table>
+        <h4 class="req-h4">Construction Requirements</h4>
+        <div class="req-intro"><p>{html.escape(intro_const)}</p></div>
+        <table class="task-table req-table"><thead><tr><th>ID</th><th>Category</th><th>Requirement</th><th>Example</th></tr></thead><tbody>
+{const_rows}
+        </tbody></table>
       </div>"""
 
 
@@ -210,27 +295,6 @@ def patch_index():
     if not re.search(pattern, text):
         raise SystemExit("Coverage section not found")
     text = re.sub(pattern, coverage + "\n    </div>`", text, count=1)
-
-    # Meeting notes
-    old_meeting = """    body: `<div class="detail-body"><div class="section-block"><h3>Meeting Archive</h3>
-      <div class="doc-list">
-        <div class="doc-item"><div class="doc-left"><span class="doc-icon">&#128221;</span><div class="doc-info"><div class="dn">Project Kick Off — Wk 1</div><div class="dd">May 11, 2026 &middot; Pending</div></div></div><span class="doc-status" style="background:#FEF3E2;color:#B05800">Pending</span></div>
-      </div>
-    </div></div>`"""
-
-    sp_link = (
-        "https://pwc.sharepoint.com/:w:/r/sites/US-ADV-CharterWFMModernization/"
-        "Shared%20Documents/1.%20Global%20Design/Field%20Service/FS_Workshop_Synthesis.docx"
-    )
-    new_meeting = f"""    body: `<div class="detail-body"><div class="section-block"><h3>Meeting Archive</h3>
-      <div class="doc-list">
-        <a class="doc-item" href="{sp_link}" target="_blank" rel="noopener noreferrer"><div class="doc-left"><span class="doc-icon">&#128221;</span><div class="doc-info"><div class="dn">Field Service Current State Workshops - Wk 1</div><div class="dd">FS_Workshop_Synthesis.docx &middot; Open document</div></div></div><span class="doc-status" style="background:#FEF3E2;color:#B05800">Available</span></a>
-      </div>
-    </div></div>`"""
-
-    if old_meeting not in text:
-        raise SystemExit("Meeting notes section not found")
-    text = text.replace(old_meeting, new_meeting)
 
     # Add requirements CSS if missing
     css = """
