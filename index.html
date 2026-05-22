@@ -160,6 +160,77 @@ body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text)
 .quick-link:hover { background: var(--navy-mid); color: #fff; border-color: var(--navy-mid); }
 a.quick-link { text-decoration: none; color: var(--navy-mid); display: inline-block; }
 a.quick-link:hover { color: #fff; }
+.hub-search-wrap {
+  position: relative;
+  flex: 1 1 220px;
+  min-width: 200px;
+  max-width: 360px;
+  margin-left: auto;
+}
+.hub-search-input {
+  width: 100%;
+  padding: 6px 12px 6px 32px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='%235A6E88'%3E%3Cpath d='M6 0a6 6 0 1 1 0 12A6 6 0 0 1 6 0Zm0 1.2a4.8 4.8 0 1 0 0 9.6 4.8 4.8 0 0 0 0-9.6Zm7.1 9.9-.8-.8 2.4-2.4.8.8-2.4 2.4Z'/%3E%3C/svg%3E") no-repeat 11px center;
+  outline: none;
+}
+.hub-search-input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(26, 111, 191, 0.15);
+}
+.hub-search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(13, 27, 46, 0.14);
+}
+.hub-search-results[hidden] { display: none; }
+.hub-search-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--white);
+  padding: 9px 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.hub-search-item:last-child { border-bottom: none; }
+.hub-search-item:hover,
+.hub-search-item:focus {
+  background: #eef3fa;
+  outline: none;
+}
+.hub-search-item .hs-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+.hub-search-item .hs-meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.hub-search-empty {
+  padding: 12px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
 
 /* Announcements */
 .announce-list { display: flex; flex-direction: column; gap: 8px; }
@@ -384,6 +455,19 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
     <div class="quick-link" onclick="nav('steerco')">&#128101; Steerco Decks</div>
     <div class="quick-link" onclick="nav('integration-arch')">&#128268; Integration Architecture</div>
     <a class="quick-link" href="https://pwc-us-adv-cc-9cf57793.atlassian.net/" target="_blank" rel="noopener noreferrer">&#128279; Jira</a>
+    <div class="hub-search-wrap">
+      <input
+        type="search"
+        id="hubSearchInput"
+        class="hub-search-input"
+        placeholder="Search project links…"
+        autocomplete="off"
+        aria-label="Search project links"
+        aria-expanded="false"
+        aria-controls="hubSearchResults"
+      />
+      <div id="hubSearchResults" class="hub-search-results" hidden role="listbox"></div>
+    </div>
   </div>
 
   <div class="dir-section">
@@ -1319,6 +1403,141 @@ const pages = {
   },
 };
 
+/* ─── Hub link search ─────────────────────────────────────────── */
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+const hubSearchIndex = [];
+const hubSearchSeen = new Set();
+
+function hubSearchKey(label, meta, kind) {
+  return (kind + '|' + label + '|' + meta).toLowerCase();
+}
+
+function addHubSearchEntry(label, meta, kind, run) {
+  const key = hubSearchKey(label, meta, kind);
+  if (hubSearchSeen.has(key)) return;
+  hubSearchSeen.add(key);
+  hubSearchIndex.push({
+    label,
+    meta: meta || '',
+    kind: kind || 'Link',
+    keywords: (label + ' ' + meta + ' ' + kind).toLowerCase(),
+    run
+  });
+}
+
+function buildHubSearchIndex() {
+  hubSearchIndex.length = 0;
+  hubSearchSeen.clear();
+
+  Object.keys(pages).forEach(pageId => {
+    const p = pages[pageId];
+    addHubSearchEntry(p.title, p.category, 'Hub page', () => nav(pageId));
+
+    if (!p.body) return;
+    const docRe = /<a class="doc-item" href="([^"]*)"[^>]*>[\s\S]*?<div class="dn">([^<]*)<\/div>[\s\S]*?<div class="dd">([^<]*)<\/div>/gi;
+    let m;
+    while ((m = docRe.exec(p.body)) !== null) {
+      const href = m[1].replace(/&amp;/g, '&');
+      const title = m[2].trim();
+      const sub = m[3].trim();
+      addHubSearchEntry(title, p.title + ' · ' + sub, 'Document', () => window.open(href, '_blank', 'noopener,noreferrer'));
+    }
+  });
+
+  addHubSearchEntry('Global Design Workshop Calendar', 'Schedule · GDWorkshops', 'External page', () => {
+    window.location.href = 'GDWorkshops.html';
+  });
+
+  document.querySelectorAll('.cat-link[onclick]').forEach(el => {
+    const match = el.getAttribute('onclick').match(/nav\(['"]([^'"]+)['"]\)/);
+    if (!match) return;
+    const pageId = match[1];
+    const label = el.querySelector('.link-text')?.textContent?.trim() || pages[pageId]?.title || pageId;
+    const card = el.closest('.cat-card');
+    const category = card?.querySelector('h3')?.textContent?.trim() || 'Project Directory';
+    addHubSearchEntry(label, category, 'Directory', () => nav(pageId));
+  });
+
+  document.querySelectorAll('.quick-link').forEach(el => {
+    const href = el.getAttribute('href');
+    const text = el.textContent.replace(/\s+/g, ' ').trim();
+    if (href) {
+      addHubSearchEntry(text, 'Quick link · External', 'External', () => window.open(href, '_blank', 'noopener,noreferrer'));
+      return;
+    }
+    const match = el.getAttribute('onclick')?.match(/nav\(['"]([^'"]+)['"]\)/);
+    if (match) addHubSearchEntry(text, 'Quick link', 'Quick link', () => nav(match[1]));
+  });
+
+  hubSearchIndex.sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function renderHubSearchResults(query) {
+  const box = document.getElementById('hubSearchResults');
+  const input = document.getElementById('hubSearchInput');
+  const q = query.trim().toLowerCase();
+  if (!q) {
+    box.hidden = true;
+    input.setAttribute('aria-expanded', 'false');
+    box.innerHTML = '';
+    return;
+  }
+  const tokens = q.split(/\s+/).filter(Boolean);
+  const hits = hubSearchIndex.filter(item => tokens.every(t => item.keywords.includes(t)));
+  input.setAttribute('aria-expanded', 'true');
+  box.hidden = false;
+  if (!hits.length) {
+    box.innerHTML = '<div class="hub-search-empty">No links match “' + escapeHtml(query) + '”</div>';
+    return;
+  }
+  box.innerHTML = hits.slice(0, 12).map((item, i) =>
+    '<button type="button" class="hub-search-item" role="option" data-idx="' + i + '">' +
+    '<span class="hs-label">' + escapeHtml(item.label) + '</span>' +
+    '<span class="hs-meta">' + escapeHtml(item.kind) + ' · ' + escapeHtml(item.meta) + '</span></button>'
+  ).join('');
+  box.querySelectorAll('.hub-search-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = hits[Number(btn.dataset.idx)];
+      if (item) {
+        item.run();
+        input.value = '';
+        renderHubSearchResults('');
+      }
+    });
+  });
+}
+
+function initHubSearch() {
+  buildHubSearchIndex();
+  const input = document.getElementById('hubSearchInput');
+  const box = document.getElementById('hubSearchResults');
+  input.addEventListener('input', () => renderHubSearchResults(input.value));
+  input.addEventListener('focus', () => {
+    if (input.value.trim()) renderHubSearchResults(input.value);
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.hub-search-wrap')) {
+      box.hidden = true;
+      input.setAttribute('aria-expanded', 'false');
+    }
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      input.value = '';
+      renderHubSearchResults('');
+      input.blur();
+    }
+  });
+}
+
 /* ─── Router ─────────────────────────────────────────────────── */
 function nav(pageId) {
   if (pageId === 'home') {
@@ -1578,6 +1797,8 @@ function gateToggleEye() {
     eye.textContent = '\u{1F441}';
   }
 }
+
+initHubSearch();
 
 </script>
 </body>
