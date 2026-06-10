@@ -114,6 +114,115 @@ body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text)
 .dir-section { padding: 36px 40px; max-width: 1280px; margin: 0 auto; }
 .dir-section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 700; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
 
+.dir-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.dir-tab {
+  padding: 8px 18px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--white);
+  color: var(--navy-mid);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.dir-tab:hover { background: #EEF3FA; border-color: #C5D4E8; }
+.dir-tab.active {
+  background: var(--navy-mid);
+  color: #fff;
+  border-color: var(--navy-mid);
+}
+.dir-panel[hidden] { display: none !important; }
+
+.dir-alpha-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 20px;
+  padding: 12px 14px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.dir-alpha-jump a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--navy-mid);
+  text-decoration: none;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.dir-alpha-jump a:hover { background: #EEF3FA; border-color: var(--blue); color: var(--blue); }
+.dir-alpha-jump a.is-empty { opacity: .35; pointer-events: none; }
+
+.dir-alpha-group { margin-bottom: 24px; }
+.dir-alpha-letter {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--navy-mid);
+  padding: 6px 0 8px;
+  border-bottom: 2px solid var(--navy-mid);
+  margin-bottom: 8px;
+  scroll-margin-top: 16px;
+}
+.dir-alpha-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.dir-alpha-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .12s;
+}
+.dir-alpha-item:last-child { border-bottom: none; }
+.dir-alpha-item:hover { background: #EEF3FA; }
+.dir-alpha-item .alpha-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+}
+.dir-alpha-item .alpha-meta {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.dir-alpha-item .alpha-arrow { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+.dir-alpha-item:hover .alpha-arrow { color: var(--blue); }
+.dir-alpha-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
 .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-bottom: 36px; }
 
 .cat-card {
@@ -514,6 +623,12 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
   <div class="dir-section">
     <h2>Project Directory</h2>
 
+    <div class="dir-tabs" role="tablist" aria-label="Project directory views">
+      <button type="button" class="dir-tab active" role="tab" aria-selected="true" aria-controls="dirPanelCategory" id="dirTabCategory" data-dir-panel="category">By Category</button>
+      <button type="button" class="dir-tab" role="tab" aria-selected="false" aria-controls="dirPanelAlphabet" id="dirTabAlphabet" data-dir-panel="alphabet">A&ndash;Z Index</button>
+    </div>
+
+    <div id="dirPanelCategory" class="dir-panel" role="tabpanel" aria-labelledby="dirTabCategory">
     <div class="cat-grid">
 
       <!-- PMO -->
@@ -655,6 +770,12 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
         </div>
       </div>
 
+    </div>
+    </div>
+
+    <div id="dirPanelAlphabet" class="dir-panel" role="tabpanel" aria-labelledby="dirTabAlphabet" hidden>
+      <nav id="dirAlphaJump" class="dir-alpha-jump" aria-label="Jump to letter"></nav>
+      <div id="dirAlphabetIndex"></div>
     </div>
 
     <!-- Announcements -->
@@ -1672,8 +1793,100 @@ function renderHubSearchResults(query) {
   });
 }
 
+function dirAlphaLetter(label) {
+  const ch = (label.trim()[0] || '#').toUpperCase();
+  return /[A-Z]/.test(ch) ? ch : '#';
+}
+
+function renderDirAlphabetIndex() {
+  const container = document.getElementById('dirAlphabetIndex');
+  const jump = document.getElementById('dirAlphaJump');
+  if (!container || !jump) return;
+
+  const groups = {};
+  hubSearchIndex.forEach((item, idx) => {
+    const letter = dirAlphaLetter(item.label);
+    if (!groups[letter]) groups[letter] = [];
+    groups[letter].push({ item, idx });
+  });
+
+  const letters = Object.keys(groups).sort((a, b) => {
+    if (a === '#') return 1;
+    if (b === '#') return -1;
+    return a.localeCompare(b);
+  });
+
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('');
+  jump.innerHTML = alphabet.map(letter => {
+    const has = Boolean(groups[letter]);
+    const href = has ? '#dir-alpha-' + letter : '#';
+    const cls = has ? '' : ' class="is-empty"';
+    return '<a href="' + href + '"' + cls + ' aria-label="Jump to ' + letter + '">' + letter + '</a>';
+  }).join('');
+
+  if (!letters.length) {
+    container.innerHTML = '<div class="dir-alpha-empty">No links indexed yet.</div>';
+    return;
+  }
+
+  container.innerHTML = letters.map(letter => {
+    const items = groups[letter];
+    const rows = items.map(({ item, idx }) =>
+      '<li class="dir-alpha-item" role="button" tabindex="0" data-alpha-idx="' + idx + '">' +
+      '<span class="alpha-label">' + escapeHtml(item.label) + '</span>' +
+      '<span class="alpha-meta">' + escapeHtml(item.kind) + '</span>' +
+      '<span class="alpha-arrow" aria-hidden="true">&#8250;</span></li>'
+    ).join('');
+    return '<section class="dir-alpha-group" id="dir-alpha-' + letter + '">' +
+      '<h3 class="dir-alpha-letter">' + letter + '</h3>' +
+      '<ul class="dir-alpha-list">' + rows + '</ul></section>';
+  }).join('');
+
+  container.querySelectorAll('.dir-alpha-item').forEach(el => {
+    const run = () => {
+      const item = hubSearchIndex[Number(el.dataset.alphaIdx)];
+      if (item) item.run();
+    };
+    el.addEventListener('click', run);
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        run();
+      }
+    });
+  });
+}
+
+function initDirTabs() {
+  const tabs = document.querySelectorAll('.dir-tab[data-dir-panel]');
+  const panels = {
+    category: document.getElementById('dirPanelCategory'),
+    alphabet: document.getElementById('dirPanelAlphabet')
+  };
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const id = tab.dataset.dirPanel;
+      tabs.forEach(t => {
+        const on = t === tab;
+        t.classList.toggle('active', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      Object.keys(panels).forEach(key => {
+        const panel = panels[key];
+        if (!panel) return;
+        const show = key === id;
+        panel.hidden = !show;
+      });
+      if (id === 'alphabet') renderDirAlphabetIndex();
+    });
+  });
+}
+
 function initHubSearch() {
   buildHubSearchIndex();
+  renderDirAlphabetIndex();
+  initDirTabs();
   const input = document.getElementById('hubSearchInput');
   const box = document.getElementById('hubSearchResults');
   input.addEventListener('input', () => renderHubSearchResults(input.value));
