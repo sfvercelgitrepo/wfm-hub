@@ -418,6 +418,21 @@
       border: 1px solid #166534;
     }
     .pill.kickoff small { color: rgba(255, 255, 255, 0.92); }
+    .pill.pending-confirmation {
+      box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.55), 0 6px 14px rgba(0,0,0,0.08);
+    }
+    .pill-status {
+      display: inline-block;
+      margin-top: 5px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.25px;
+      background: #f59e0b;
+      color: #1a1200;
+      border: 1px solid #d97706;
+    }
 
     .tooltip {
       position: fixed;
@@ -851,6 +866,7 @@
         'Estimated Time': r['Estimated Time'],
         'Hours': r.hours,
         'Business Unit': r['Business Unit'],
+        'Status': isPendingConfirmation(r) ? 'Pending Confirmation' : 'Confirmed',
         'Objective': r.Objective
       }));
       const kickoffExportRow = {
@@ -955,6 +971,10 @@
         case 'Technical': return 'Showing Technical workshops only.';
         default: return 'Showing all business and technical workshops.';
       }
+    }
+
+    function isPendingConfirmation(item) {
+      return item.monthKey === '2026-07' || (item.dateISO && item.dateISO.startsWith('2026-07'));
     }
 
     function pillClass(bu) {
@@ -1082,19 +1102,22 @@
         if (showKickoff) attachKickoffPill();
 
         dayItems.forEach(item => {
+          const pending = isPendingConfirmation(item);
           const pill = document.createElement('div');
-          pill.className = 'pill ' + pillClass(item['Business Unit']);
+          pill.className = 'pill ' + pillClass(item['Business Unit']) + (pending ? ' pending-confirmation' : '');
           pill.title = (item['Workshop Topic'] || '') + ' — ' + (item['Objective'] || 'No objective provided');
           let icon = '';
 if(item['Business Unit']==='Field Service') icon='🚐 ';
 else if(item['Business Unit']==='Maintenance') icon='🔧 ';
 else if(item['Business Unit']==='Construction') icon='🚧 ';
 else icon='💻 ';
-pill.innerHTML = `${icon}${item['Workshop Topic']}<small>${item['Business Unit']} · ${item['Estimated Time'] || 'TBD'}</small>`;
+const pendingTag = pending ? '<span class="pill-status">Pending Confirmation</span>' : '';
+pill.innerHTML = `${icon}${item['Workshop Topic']}<small>${item['Business Unit']} · ${item['Estimated Time'] || 'TBD'}</small>${pendingTag}`;
 
           const tooltipHtml = `
             <strong>${escapeHtml(item['Workshop Topic'])}</strong>
             <div class="meta">Week ${item['Week']} · ${escapeHtml(item['Day'])} · ${escapeHtml(item['Business Unit'])}</div>
+            ${pending ? '<div style="margin-top:6px"><span class="pill-status">Pending Confirmation</span></div>' : ''}
             <div><strong style="display:inline">Phase:</strong> ${escapeHtml(item['Phase of Engagement'] || '—')}</div>
             <div><strong style="display:inline">Nature:</strong> ${escapeHtml(item['Nature (Business or Technical)'] || '—')}</div>
             <div><strong style="display:inline">Estimated time:</strong> ${escapeHtml(item['Estimated Time'] || '—')}</div>
