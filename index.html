@@ -621,6 +621,7 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
     <div class="quick-link" onclick="nav('risk-log')">&#9888; Risk Log</div>
     <div class="quick-link" onclick="nav('steerco')">&#128101; Steerco Decks</div>
     <div class="quick-link" onclick="nav('integration-arch')">&#128268; Integration Architecture</div>
+    <a class="quick-link" href="WFMEstimates.html">&#128200; Estimates</a>
     <a class="quick-link" href="https://pwc-us-adv-cc-9cf57793.atlassian.net/" target="_blank" rel="noopener noreferrer">&#128279; Jira</a>
     <div class="hub-search-wrap">
       <input
@@ -695,6 +696,7 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
         </div>
         <div class="cat-links">
           <div class="cat-link" onclick="nav('integration-arch')"><div class="link-left"><span class="link-icon">&#128268;</span><span class="link-text">Integration Architecture</span></div><span class="link-badge badge-wip">WIP</span><span class="arrow">&#8250;</span></div>
+          <a class="cat-link" href="WFMEstimates.html" style="text-decoration:none;color:inherit"><div class="link-left"><span class="link-icon">&#128200;</span><span class="link-text">Estimates</span></div><span class="link-badge badge-new">New</span><span class="arrow">&#8250;</span></a>
           <div class="cat-link" onclick="nav('data-model')"><div class="link-left"><span class="link-icon">&#128451;</span><span class="link-text">Data Model &amp; Master Data</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
           <div class="cat-link" onclick="nav('devops')"><div class="link-left"><span class="link-icon">&#9881;</span><span class="link-text">DevOps &amp; Environment Strategy</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
           <div class="cat-link" onclick="nav('security')"><div class="link-left"><span class="link-icon">&#128274;</span><span class="link-text">Security &amp; Access Model</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
@@ -1781,6 +1783,9 @@ function buildHubSearchIndex() {
 
   addHubSearchEntry('Global Design Workshop Calendar', 'Schedule · GDWorkshops', 'External page', () => {
     window.location.href = 'GDWorkshops.html';
+  });
+  addHubSearchEntry('Estimates', 'Technical · WFMEstimates', 'External page', () => {
+    window.location.href = 'WFMEstimates.html';
   });
 
   document.querySelectorAll('.cat-link[onclick]').forEach(el => {
