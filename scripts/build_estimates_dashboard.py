@@ -50,7 +50,7 @@ DROPDOWN_MAX = 80
 TEXT_SEARCH_KEYS = {"issue_key", "issue_id", "summary", "description"}
 FILTER_EXCLUDE_KEYS = {
     "issue_type", "issue_key", "issue_id", "summary", "description",
-    "decision_category", "decision_type", "business_units",
+    "decision_category", "decision_type", "business_units", "fix_versions", "priority",
     "creator", "reporter", "created", "updated", "due_date", "parent", "components",
 }
 DATE_KEYS = {"created", "updated", "due_date"}
@@ -183,10 +183,10 @@ CHART_COLORS = [
 ]
 
 
-def business_unit_options(issues: List[Dict[str, Any]]) -> List[str]:
+def field_value_options(issues: List[Dict[str, Any]], field_key: str) -> List[str]:
     counter: Counter[str] = Counter()
     for issue in issues:
-        value = str(issue.get("business_units") or "").strip() or "(Blank)"
+        value = str(issue.get(field_key) or "").strip() or "(Blank)"
         counter[value] += 1
     return [value for value, _ in counter.most_common()]
 
@@ -205,9 +205,15 @@ def enrich_epic_names(issues: List[Dict[str, Any]], all_rows: List[Dict[str, str
 
 def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]], source: str) -> str:
     generated = datetime.now().strftime("%b %d, %Y %H:%M")
-    bu_options = business_unit_options(issues)
+    bu_options = field_value_options(issues, "business_units")
+    fix_version_options = field_value_options(issues, "fix_versions")
     data_json = json.dumps(
-        {"issues": issues, "fields": field_meta, "buOptions": bu_options},
+        {
+            "issues": issues,
+            "fields": field_meta,
+            "buOptions": bu_options,
+            "fixVersionOptions": fix_version_options,
+        },
         separators=(",", ":"),
     )
     source_name = html.escape(os.path.basename(source))
@@ -305,6 +311,12 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
     .quick-filters {{
       background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
       padding: 12px 14px; margin-bottom: 12px;
+      display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap;
+    }}
+    .quick-row {{
+      flex: 1 1 280px; min-width: 0;
+      border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+      background: var(--surface-2);
     }}
     .quick-label {{
       font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;
@@ -317,6 +329,24 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
     }}
     .quick-chip:hover {{ color: var(--text); border-color: var(--accent); }}
     .quick-chip.active {{ background: var(--accent); color: #fff; border-color: var(--accent); }}
+    .capacity-kpi-grid {{
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px;
+    }}
+    .capacity-kpi-grid .kpi-value.over {{ color: #f87171; }}
+    .capacity-kpi-grid .kpi-value.ok {{ color: var(--green); }}
+    .capacity-chart-card {{ margin-bottom: 12px; }}
+    .capacity-note {{ font-size: 11px; color: var(--muted); margin: -4px 0 14px; line-height: 1.45; }}
+    .burndown-wrap {{ width: 100%; overflow-x: auto; }}
+    .burndown-svg {{ width: 100%; min-width: 640px; height: 300px; display: block; }}
+    .capacity-legend {{ display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 11px; color: var(--muted); }}
+    .capacity-legend-item {{ display: flex; align-items: center; gap: 6px; }}
+    .capacity-legend-line {{ width: 22px; height: 3px; border-radius: 2px; }}
+    .capacity-legend-line.dashed {{
+      background: repeating-linear-gradient(90deg, #8b9cb3 0 5px, transparent 5px 8px);
+    }}
+    @media (max-width: 1100px) {{
+      .capacity-kpi-grid {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+    }}
     .view-tabs {{
       display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
     }}
@@ -424,6 +454,7 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
         <div class="view-tabs" role="tablist" aria-label="Estimates views">
           <button type="button" class="view-tab active" data-tab="dashboard" role="tab" aria-selected="true">Dashboard</button>
           <button type="button" class="view-tab" data-tab="requirements" role="tab" aria-selected="false">Requirements (<span id="tabReqCount">0</span>)</button>
+          <button type="button" class="view-tab" data-tab="capacity" role="tab" aria-selected="false">Capacity to Load</button>
         </div>
 
         <div id="panelDashboard" class="view-panel active" role="tabpanel">
@@ -458,8 +489,14 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
           <div class="meta-line" id="metaLine"></div>
 
           <div class="quick-filters">
-            <div class="quick-label">Business unit</div>
-            <div class="quick-chips" id="buQuickFilters"></div>
+            <div class="quick-row">
+              <div class="quick-label">Business unit</div>
+              <div class="quick-chips" id="buQuickFilters"></div>
+            </div>
+            <div class="quick-row">
+              <div class="quick-label">Fix version</div>
+              <div class="quick-chips" id="fixVersionQuickFilters"></div>
+            </div>
           </div>
 
           <div class="chart-grid">
@@ -488,6 +525,41 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
                 </thead>
                 <tbody id="issueBody"></tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="panelCapacity" class="view-panel" role="tabpanel">
+          <div class="capacity-kpi-grid">
+            <div class="kpi-card hero-kpi">
+              <div class="kpi-label">Available capacity</div>
+              <div class="kpi-value" id="capTotal">2,400 SP</div>
+              <div class="kpi-sub">10 sprints · 2 weeks each</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Filtered load</div>
+              <div class="kpi-value" id="capLoad">0 SP</div>
+              <div class="kpi-sub">Estimated story points</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Remaining capacity</div>
+              <div class="kpi-value" id="capRemaining">2,400 SP</div>
+              <div class="kpi-sub" id="capRemainingSub">After full load</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Utilization</div>
+              <div class="kpi-value" id="capUtil">0%</div>
+              <div class="kpi-sub" id="capUtilSub">Load vs 2,400 SP capacity</div>
+            </div>
+          </div>
+          <div class="chart-card capacity-chart-card">
+            <div class="chart-title">Capacity burn up</div>
+            <div class="capacity-note" id="capNote"></div>
+            <div class="burndown-wrap" id="capacityBurndown"></div>
+            <div class="capacity-legend">
+              <div class="capacity-legend-item"><span class="capacity-legend-line" style="background:#4a9eff"></span>Filtered load (cumulative SP)</div>
+              <div class="capacity-legend-item"><span class="capacity-legend-line dashed"></span>Planned capacity (240 SP / sprint)</div>
+              <div class="capacity-legend-item"><span class="capacity-legend-line" style="background:#fbbf24;height:2px"></span>Capacity ceiling (2,400 SP)</div>
             </div>
           </div>
         </div>
@@ -538,7 +610,10 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
     }}
 
     const filtersEl = document.getElementById("filters");
-    const selectedBus = new Set();
+    const quickFilterSelections = {{
+      business_units: new Set(),
+      fix_versions: new Set(),
+    }};
 
     function escapeHtml(v) {{
       return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -574,46 +649,65 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
       }}).join("");
     }}
 
-    function buildBuQuickFilters() {{
-      const el = document.getElementById("buQuickFilters");
-      const chips = ['<button type="button" class="quick-chip active" data-bu="">All</button>'];
-      (DATA.buOptions || []).forEach(function (bu) {{
+    function buildQuickFilterGroup(containerId, fieldKey, options) {{
+      const el = document.getElementById(containerId);
+      const chips = ['<button type="button" class="quick-chip active" data-value="">All</button>'];
+      (options || []).forEach(function (option) {{
         chips.push(
-          '<button type="button" class="quick-chip" data-bu="' + escapeHtml(bu) + '">' + escapeHtml(bu) + '</button>'
+          '<button type="button" class="quick-chip" data-value="' + escapeHtml(option) + '">' +
+          escapeHtml(option) + '</button>'
         );
       }});
       el.innerHTML = chips.join("");
       el.querySelectorAll(".quick-chip").forEach(function (btn) {{
         btn.addEventListener("click", function () {{
-          const value = btn.dataset.bu || "";
+          const value = btn.dataset.value || "";
+          const selected = quickFilterSelections[fieldKey];
           if (!value) {{
-            selectedBus.clear();
-          }} else if (selectedBus.has(value)) {{
-            selectedBus.delete(value);
+            selected.clear();
+          }} else if (selected.has(value)) {{
+            selected.delete(value);
           }} else {{
-            selectedBus.add(value);
+            selected.add(value);
           }}
-          syncBuQuickFilters();
+          syncQuickFilterGroup(containerId, fieldKey);
           render();
         }});
       }});
     }}
 
-    function syncBuQuickFilters() {{
-      document.querySelectorAll("#buQuickFilters .quick-chip").forEach(function (btn) {{
-        const value = btn.dataset.bu || "";
+    function syncQuickFilterGroup(containerId, fieldKey) {{
+      const selected = quickFilterSelections[fieldKey];
+      document.querySelectorAll("#" + containerId + " .quick-chip").forEach(function (btn) {{
+        const value = btn.dataset.value || "";
         if (!value) {{
-          btn.classList.toggle("active", selectedBus.size === 0);
+          btn.classList.toggle("active", selected.size === 0);
         }} else {{
-          btn.classList.toggle("active", selectedBus.has(value));
+          btn.classList.toggle("active", selected.has(value));
         }}
       }});
     }}
 
-    function matchesBuQuickFilter(issue) {{
-      if (!selectedBus.size) return true;
-      const bu = String(issue.business_units || "").trim() || "(Blank)";
-      return selectedBus.has(bu);
+    function syncQuickFilters() {{
+      syncQuickFilterGroup("buQuickFilters", "business_units");
+      syncQuickFilterGroup("fixVersionQuickFilters", "fix_versions");
+    }}
+
+    function buildQuickFilters() {{
+      buildQuickFilterGroup("buQuickFilters", "business_units", DATA.buOptions);
+      buildQuickFilterGroup("fixVersionQuickFilters", "fix_versions", DATA.fixVersionOptions);
+    }}
+
+    function matchesQuickFilters(issue) {{
+      if (quickFilterSelections.business_units.size) {{
+        const bu = String(issue.business_units || "").trim() || "(Blank)";
+        if (!quickFilterSelections.business_units.has(bu)) return false;
+      }}
+      if (quickFilterSelections.fix_versions.size) {{
+        const fixVersion = String(issue.fix_versions || "").trim() || "(Blank)";
+        if (!quickFilterSelections.fix_versions.has(fixVersion)) return false;
+      }}
+      return true;
     }}
 
     function readFilters() {{
@@ -710,6 +804,129 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
       }}).join("");
     }}
 
+    const TOTAL_CAPACITY = 2400;
+    const SPRINT_COUNT = 10;
+    const CAPACITY_PER_SPRINT = TOTAL_CAPACITY / SPRINT_COUNT;
+
+    function formatSp(value) {{
+      const rounded = Math.round(value * 10) / 10;
+      return rounded.toLocaleString(undefined, {{ maximumFractionDigits: 1 }});
+    }}
+
+    function formatSpLabel(value) {{
+      return formatSp(value) + " SP";
+    }}
+
+    function renderCapacity(totalSp) {{
+      const remainingAfterLoad = TOTAL_CAPACITY - totalSp;
+      const utilization = TOTAL_CAPACITY ? (totalSp / TOTAL_CAPACITY) * 100 : 0;
+      const over = remainingAfterLoad < 0;
+      const completionSprint = totalSp > 0 ? Math.ceil(totalSp / CAPACITY_PER_SPRINT) : 0;
+      const maxSprint = Math.max(SPRINT_COUNT, completionSprint);
+
+      document.getElementById("capLoad").textContent = formatSpLabel(totalSp);
+      const remEl = document.getElementById("capRemaining");
+      remEl.textContent = formatSpLabel(remainingAfterLoad);
+      remEl.className = "kpi-value" + (over ? " over" : " ok");
+      document.getElementById("capRemainingSub").textContent = over
+        ? ("Over capacity by " + formatSpLabel(Math.abs(remainingAfterLoad)))
+        : "After full load";
+      const utilEl = document.getElementById("capUtil");
+      utilEl.textContent = Math.round(utilization) + "%";
+      utilEl.className = "kpi-value" + (utilization > 100 ? " over" : "");
+      document.getElementById("capUtilSub").textContent = utilization > 100
+        ? "Exceeds 2,400 SP capacity"
+        : "Load vs 2,400 SP capacity";
+
+      let note = "Delivery rate 240 SP / sprint · Plan horizon sprint " + SPRINT_COUNT + " (2,400 SP capacity)";
+      if (totalSp > 0) {{
+        note += " · Projected completion sprint " + completionSprint + " (" + formatSpLabel(totalSp) + ")";
+        if (completionSprint > SPRINT_COUNT) {{
+          note += " · " + (completionSprint - SPRINT_COUNT) + " sprints beyond plan";
+        }}
+      }}
+      document.getElementById("capNote").textContent = note;
+
+      const loadSeries = [];
+      const capacitySeries = [];
+      for (let s = 0; s <= maxSprint; s++) {{
+        loadSeries.push(Math.min(s * CAPACITY_PER_SPRINT, totalSp));
+        capacitySeries.push(Math.min(s * CAPACITY_PER_SPRINT, TOTAL_CAPACITY));
+      }}
+
+      const peak = Math.max(TOTAL_CAPACITY, totalSp, 200);
+      const maxY = Math.ceil(peak / 200) * 200;
+      const width = Math.max(920, 80 + maxSprint * 72);
+      const height = 300;
+      const pad = {{ top: 28, right: 28, bottom: 48, left: 62 }};
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+
+      function xAt(sprint) {{ return pad.left + (sprint / maxSprint) * plotW; }}
+      function yAt(v) {{ return pad.top + (1 - v / maxY) * plotH; }}
+      function linePath(vals) {{
+        return vals.map(function (v, i) {{
+          return (i === 0 ? "M" : "L") + xAt(i).toFixed(1) + "," + yAt(v).toFixed(1);
+        }}).join(" ");
+      }}
+
+      let grid = "";
+      for (let v = 0; v <= maxY; v += 200) {{
+        const y = yAt(v).toFixed(1);
+        const isZero = v === 0;
+        grid += '<line x1="' + pad.left + '" y1="' + y + '" x2="' + (width - pad.right) + '" y2="' + y +
+          '" stroke="' + (isZero ? "#8b9cb3" : "#2a3544") + '" stroke-width="' + (isZero ? "1.5" : "1") + '"/>';
+        grid += '<text x="' + (pad.left - 8) + '" y="' + y + '" fill="#8b9cb3" font-size="10" text-anchor="end" dominant-baseline="middle">' +
+          formatSp(v) + '</text>';
+      }}
+
+      const yCap = yAt(TOTAL_CAPACITY).toFixed(1);
+      grid += '<line x1="' + pad.left + '" y1="' + yCap + '" x2="' + (width - pad.right) + '" y2="' + yCap +
+        '" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5 4"/>';
+      grid += '<text x="' + (width - pad.right + 4) + '" y="' + yCap +
+        '" fill="#fbbf24" font-size="9" dominant-baseline="middle">2,400 SP</text>';
+
+      if (maxSprint > SPRINT_COUNT) {{
+        const xPlan = xAt(SPRINT_COUNT).toFixed(1);
+        grid += '<line x1="' + xPlan + '" y1="' + pad.top + '" x2="' + xPlan + '" y2="' + (height - pad.bottom) +
+          '" stroke="#5f7388" stroke-width="1" stroke-dasharray="4 4"/>';
+        grid += '<text x="' + xPlan + '" y="' + (pad.top - 8) +
+          '" fill="#8b9cb3" font-size="9" text-anchor="middle">S' + SPRINT_COUNT + " plan</text>";
+      }}
+
+      let xLabels = "";
+      for (let s = 0; s <= maxSprint; s++) {{
+        const label = s === 0 ? "0" : "S" + s;
+        const anchor = s === 0 ? "start" : (s === maxSprint ? "end" : "middle");
+        const highlight = s === completionSprint && totalSp > 0;
+        xLabels += '<text x="' + xAt(s).toFixed(1) + '" y="' + (height - 16) +
+          '" fill="' + (highlight ? "#4a9eff" : "#8b9cb3") + '" font-size="10" text-anchor="' + anchor +
+          '" font-weight="' + (highlight ? "700" : "400") + '">' + label +
+          (highlight ? "*" : "") + '</text>';
+      }}
+
+      let points = "";
+      loadSeries.forEach(function (v, i) {{
+        if (i > completionSprint) return;
+        const color = v > TOTAL_CAPACITY ? "#f87171" : "#4a9eff";
+        points += '<circle cx="' + xAt(i).toFixed(1) + '" cy="' + yAt(v).toFixed(1) +
+          '" r="3.5" fill="' + color + '"/>';
+      }});
+
+      const loadPath = linePath(loadSeries.slice(0, completionSprint + 1));
+
+      document.getElementById("capacityBurndown").innerHTML =
+        '<svg class="burndown-svg" viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="Capacity burn up chart">' +
+        grid +
+        '<path d="' + linePath(capacitySeries) + '" fill="none" stroke="#8b9cb3" stroke-width="2" stroke-dasharray="6 5"/>' +
+        '<path d="' + loadPath + '" fill="none" stroke="#4a9eff" stroke-width="2.5"/>' +
+        points +
+        xLabels +
+        '<text x="' + (pad.left + plotW / 2) + '" y="' + (height - 4) +
+          '" fill="#8b9cb3" font-size="10" text-anchor="middle">Sprint (2 weeks each) · * projected completion</text>' +
+        '</svg>';
+    }}
+
     function renderCharts(rows) {{
       document.getElementById("chartBu").innerHTML =
         '<div class="chart-title">Story points by business unit</div>' +
@@ -727,7 +944,7 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
 
     function render() {{
       const rows = DATA.issues.filter(function (issue) {{
-        return matchIssue(issue, readFilters()) && matchesBuQuickFilter(issue);
+        return matchIssue(issue, readFilters()) && matchesQuickFilters(issue);
       }});
       const withSp = rows.filter(function (r) {{ return r.story_points != null; }});
       const totalSp = withSp.reduce(function (s, r) {{ return s + r.story_points; }}, 0);
@@ -742,6 +959,7 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
       document.getElementById("tabReqCount").textContent = rows.length;
 
       renderCharts(rows);
+      renderCapacity(totalSp);
 
       document.getElementById("issueBody").innerHTML = rows.map(function (r) {{
         const keyLink = '<a href="' + JIRA_BASE + '/browse/' + encodeURIComponent(r.issue_key) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(r.issue_key) + '</a>';
@@ -768,6 +986,7 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
       }});
       document.getElementById("panelDashboard").classList.toggle("active", tabId === "dashboard");
       document.getElementById("panelRequirements").classList.toggle("active", tabId === "requirements");
+      document.getElementById("panelCapacity").classList.toggle("active", tabId === "capacity");
     }}
 
     document.querySelectorAll(".view-tab").forEach(function (btn) {{
@@ -775,14 +994,15 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
     }});
 
     buildFilters();
-    buildBuQuickFilters();
+    buildQuickFilters();
     document.getElementById("clearBtn").addEventListener("click", function () {{
       DATA.fields.forEach(function (field) {{
         const el = document.getElementById("f-" + field.key);
         if (el && !el.disabled) el.value = "";
       }});
-      selectedBus.clear();
-      syncBuQuickFilters();
+      quickFilterSelections.business_units.clear();
+      quickFilterSelections.fix_versions.clear();
+      syncQuickFilters();
       render();
     }});
     filtersEl.addEventListener("change", render);
