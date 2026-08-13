@@ -191,14 +191,55 @@ def field_value_options(issues: List[Dict[str, Any]], field_key: str) -> List[st
     return [value for value, _ in counter.most_common()]
 
 
+def _epic_key_from_linked_issues(raw: str, row_types: Dict[str, str]) -> str:
+    """Resolve epic from Parent-Child issue link when Epic Link field is empty."""
+    if not raw:
+        return ""
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return ""
+    links = data if isinstance(data, list) else [data]
+    for link in links:
+        if not isinstance(link, dict):
+            continue
+        if clean_text((link.get("type") or {}).get("name", "")) != "Parent-Child":
+            continue
+        inward = link.get("inwardIssue") or {}
+        key = clean_text(inward.get("key", ""))
+        if not key:
+            continue
+        inward_type = clean_text(((inward.get("fields") or {}).get("issuetype") or {}).get("name", ""))
+        if inward_type == "Epic" or row_types.get(key) == "Epic":
+            return key
+    return ""
+
+
 def enrich_epic_names(issues: List[Dict[str, Any]], all_rows: List[Dict[str, str]]) -> None:
-    key_to_summary = {
-        clean_text(row.get("issue_key", "")): clean_text(row.get("Summary", ""))
+    by_key = {
+        clean_text(row.get("issue_key", "")): row
         for row in all_rows
         if clean_text(row.get("issue_key", ""))
     }
+    row_types = {
+        key: clean_text(row.get("Issue Type", ""))
+        for key, row in by_key.items()
+    }
+    key_to_summary = {
+        key: clean_text(row.get("Summary", ""))
+        for key, row in by_key.items()
+    }
     for issue in issues:
         epic_link = str(issue.get("epic_link") or "").strip()
+        if not epic_link:
+            parent = str(issue.get("parent") or "").strip()
+            if parent and row_types.get(parent) == "Epic":
+                epic_link = parent
+        if not epic_link:
+            source_row = by_key.get(str(issue.get("issue_key") or "").strip(), {})
+            epic_link = _epic_key_from_linked_issues(source_row.get("Linked Issues", ""), row_types)
+        if epic_link:
+            issue["epic_link"] = epic_link
         resolved = key_to_summary.get(epic_link, "")
         issue["epic_name"] = resolved or clean_text(str(issue.get("epic_name") or "")) or epic_link
 
@@ -863,18 +904,26 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
         '<div class="legend">' + legend + '</div></div>';
     }}
 
-    function hbarChart(items, mode) {{
+    function hbarChart(items, mode, opts) {{
+      opts = opts || {{}};
       if (!items.length) return '<div style="color:var(--muted);font-size:12px">No data</div>';
       const vals = items.map(function (i) {{ return mode === "sp" ? i.sp : i.count; }});
       const max = Math.max.apply(null, vals) || 1;
+      const labelMax = opts.labelMax || 16;
       return items.map(function (item, idx) {{
         const val = mode === "sp" ? item.sp : item.count;
         const width = Math.max(4, Math.round(val / max * 100));
         const color = COLORS[idx % COLORS.length];
-        const label = item.label.length > 16 ? item.label.slice(0, 15) + "…" : item.label;
-        return '<div class="hbar-row"><div class="hbar-label" title="' + escapeHtml(item.label) + '">' + escapeHtml(label) + '</div>' +
+        const label = item.label.length > labelMax ? item.label.slice(0, labelMax - 1) + "…" : item.label;
+        const tip = opts.showCount
+          ? item.label + " · " + item.count + " reqs"
+          : item.label;
+        const barVal = mode === "sp"
+          ? (opts.showCount ? val + " SP · " + item.count + " reqs" : val + " SP")
+          : String(val);
+        return '<div class="hbar-row"><div class="hbar-label" title="' + escapeHtml(tip) + '">' + escapeHtml(label) + '</div>' +
           '<div class="hbar-track"><div class="hbar-fill" style="width:' + width + '%;background:' + color + '">' +
-          '<span class="hbar-val">' + (mode === "sp" ? val + " SP" : val) + '</span></div></div></div>';
+          '<span class="hbar-val">' + barVal + '</span></div></div></div>';
       }}).join("");
     }}
 
@@ -1008,8 +1057,9 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
         '<div class="chart-title">Story points by business unit</div>' +
         hbarChart(aggregate(rows, "business_units", "sp", 8), "sp");
       document.getElementById("chartEpic").innerHTML =
-        '<div class="chart-title">Story points by epic (top 10)</div>' +
-        hbarChart(aggregate(rows, "epic_name", "sp", 10), "sp");
+        '<div class="chart-title">Story points by epic (top 15)</div>' +
+        '<div class="chart-sub" style="font-size:11px;color:var(--muted);margin:-6px 0 10px">Epic from Jira Epic Link, parent epic, or parent-child issue link</div>' +
+        hbarChart(aggregate(rows, "epic_name", "sp", 15), "sp", {{ labelMax: 24, showCount: true }});
       document.getElementById("chartBuildCount").innerHTML =
         '<div class="chart-title">Salesforce OOTB vs Custom (% requirements)</div>' +
         salesforceMixDonut(rows, 140);
