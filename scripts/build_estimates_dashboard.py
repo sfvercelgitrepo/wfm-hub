@@ -203,6 +203,31 @@ def enrich_epic_names(issues: List[Dict[str, Any]], all_rows: List[Dict[str, str
         issue["epic_name"] = resolved or clean_text(str(issue.get("epic_name") or "")) or epic_link
 
 
+def apply_build_type_rules(issues: List[Dict[str, Any]]) -> int:
+    """Dashboard mapping rules (not written back to Jira)."""
+    updated = 0
+    for issue in issues:
+        epic_name = str(issue.get("epic_name") or "").strip()
+        if epic_name == "Integrations":
+            if issue.get("build_type") != "Custom:Mulesoft":
+                updated += 1
+            issue["build_type"] = "Custom:Mulesoft"
+    return updated
+
+
+def apply_sp_rules(issues: List[Dict[str, Any]]) -> int:
+    """Show External/ISV story points as TBD (excluded from SP totals/charts)."""
+    updated = 0
+    for issue in issues:
+        if str(issue.get("build_type") or "").strip() == "External/ISV":
+            issue["sp_tbd"] = True
+            if issue.get("story_points") is not None:
+                updated += 1
+        else:
+            issue["sp_tbd"] = False
+    return updated
+
+
 def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]], source: str) -> str:
     generated = datetime.now().strftime("%b %d, %Y %H:%M")
     bu_options = field_value_options(issues, "business_units")
@@ -381,6 +406,7 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
     .mono {{ font-family: Consolas, monospace; font-size: 10px; }}
     .mono a {{ color: var(--accent); text-decoration: none; }}
     .sp {{ font-weight: 800; color: var(--green); }}
+    .sp-tbd {{ font-weight: 700; color: var(--gold); }}
     @media (max-width: 1100px) {{
       .layout {{ grid-template-columns: 1fr; }}
       .sidebar {{ position: static; max-height: none; }}
@@ -739,8 +765,8 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
           continue;
         }}
         if (f.ui === "number") {{
-          if (val === "__has__" && issue.story_points == null) return false;
-          if (val === "__none__" && issue.story_points != null) return false;
+          if (val === "__has__" && (issue.sp_tbd || issue.story_points == null)) return false;
+          if (val === "__none__" && !issue.sp_tbd && issue.story_points != null) return false;
           if (val !== "__has__" && val !== "__none__" && String(issue.story_points) !== val) return false;
           continue;
         }}
@@ -761,7 +787,7 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
         const key = String(r[field] || "").trim() || "(Blank)";
         if (!map[key]) map[key] = {{ label: key, sp: 0, count: 0 }};
         map[key].count += 1;
-        if (r.story_points != null) map[key].sp += r.story_points;
+        if (r.story_points != null && !r.sp_tbd) map[key].sp += r.story_points;
       }});
       let items = Object.values(map);
       if (mode === "sp") items.sort(function (a, b) {{ return b.sp - a.sp; }});
@@ -957,13 +983,14 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
       const rows = DATA.issues.filter(function (issue) {{
         return matchIssue(issue, readFilters()) && matchesQuickFilters(issue);
       }});
-      const withSp = rows.filter(function (r) {{ return r.story_points != null; }});
+      const withSp = rows.filter(function (r) {{ return !r.sp_tbd && r.story_points != null; }});
+      const tbdSp = rows.filter(function (r) {{ return r.sp_tbd; }});
       const totalSp = withSp.reduce(function (s, r) {{ return s + r.story_points; }}, 0);
 
       document.getElementById("kpiTotalSp").textContent = Math.round(totalSp * 10) / 10;
       document.getElementById("kpiCount").textContent = rows.length;
       document.getElementById("kpiWithSp").textContent = withSp.length;
-      document.getElementById("kpiNoSp").textContent = rows.length - withSp.length;
+      document.getElementById("kpiNoSp").textContent = rows.length - withSp.length - tbdSp.length;
       document.getElementById("kpiAvg").textContent = withSp.length ? (Math.round((totalSp / withSp.length) * 10) / 10) : "—";
       document.getElementById("metaLine").textContent = "Source: {source_name} · Requirements only · showing " + rows.length + " of " + DATA.issues.length;
       document.getElementById("tableCount").textContent = rows.length;
@@ -974,7 +1001,9 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
 
       document.getElementById("issueBody").innerHTML = rows.map(function (r) {{
         const keyLink = '<a href="' + JIRA_BASE + '/browse/' + encodeURIComponent(r.issue_key) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(r.issue_key) + '</a>';
-        const sp = r.story_points != null ? '<span class="sp">' + r.story_points + '</span>' : "—";
+        const sp = r.sp_tbd
+          ? '<span class="sp-tbd">TBD</span>'
+          : (r.story_points != null ? '<span class="sp">' + r.story_points + '</span>' : "—");
         const epic = r.epic_name || r.epic_link || "—";
         return "<tr>" +
           '<td class="mono">' + keyLink + "</td>" +
@@ -1035,12 +1064,18 @@ def main() -> None:
         if (row.get("Issue Type") or "").strip() == "Requirement"
     ]
     enrich_epic_names(issues, rows)
+    remapped = apply_build_type_rules(issues)
+    sp_tbd = apply_sp_rules(issues)
     field_meta = analyze_fields(issues)
     html_out = generate_html(issues, field_meta, args.input)
     os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
     with open(args.output, "w", encoding="utf-8") as file_obj:
         file_obj.write(html_out)
-    print(f"Estimates dashboard written: {os.path.abspath(args.output)} ({len(issues)} requirements)")
+    print(
+        f"Estimates dashboard written: {os.path.abspath(args.output)} "
+        f"({len(issues)} requirements, {remapped} Integrations → Custom:Mulesoft, "
+        f"{sp_tbd} External/ISV → SP TBD)"
+    )
 
 
 if __name__ == "__main__":
