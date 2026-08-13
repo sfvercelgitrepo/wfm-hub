@@ -537,7 +537,7 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
 
         <div id="panelCapacity" class="view-panel" role="tabpanel">
           <div class="capacity-alert">
-            <strong>Tight plan</strong> — Zero buffer. Assumes 1 week holiday shutdown during year-end.
+            <strong>Tight plan</strong> — Zero buffer. Includes 2 weeks shutdown: 1 week during year-end and 1 week for Thanksgiving.
           </div>
           <div class="capacity-kpi-grid">
             <div class="kpi-card hero-kpi">
