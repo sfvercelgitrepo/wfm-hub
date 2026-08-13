@@ -538,6 +538,7 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
           <div class="chart-grid">
             <div class="chart-card span-6" id="chartBu"></div>
             <div class="chart-card span-6" id="chartEpic"></div>
+            <div class="chart-card span-6" id="chartBuildCount"></div>
             <div class="chart-card span-6" id="chartStatus"></div>
             <div class="chart-card span-6" id="chartBuild"></div>
           </div>
@@ -828,6 +829,40 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
         '<div class="legend">' + legend + '</div></div>';
     }}
 
+    function salesforceMixDonut(rows, size) {{
+      const specs = [
+        {{ buildType: "Salesforce : OOTB Config", label: "Salesforce OOTB" }},
+        {{ buildType: "Custom: Salesforce", label: "Salesforce Custom" }},
+      ];
+      const items = specs.map(function (spec) {{
+        const count = rows.filter(function (r) {{ return r.build_type === spec.buildType; }}).length;
+        return {{ label: spec.label, count: count }};
+      }}).filter(function (item) {{ return item.count > 0; }});
+      const total = items.reduce(function (sum, item) {{ return sum + item.count; }}, 0);
+      if (!total) {{
+        return '<div style="color:var(--muted);font-size:12px">No Salesforce OOTB or Custom requirements</div>';
+      }}
+      let offset = 0;
+      const parts = items.map(function (item, idx) {{
+        const pct = item.count / total * 100;
+        const color = COLORS[idx % COLORS.length];
+        const seg = color + " " + offset.toFixed(2) + "% " + (offset + pct).toFixed(2) + "%";
+        offset += pct;
+        return seg;
+      }});
+      const legend = items.map(function (item, idx) {{
+        const pct = Math.round(item.count / total * 1000) / 10;
+        const color = COLORS[idx % COLORS.length];
+        return '<div class="legend-item"><span class="legend-swatch" style="background:' + color + '"></span>' +
+          '<span class="legend-label">' + escapeHtml(item.label) + '</span>' +
+          '<span class="legend-val">' + pct + '% · ' + item.count + '</span></div>';
+      }}).join("");
+      return '<div class="chart-row">' +
+        '<div class="donut" style="width:' + size + 'px;height:' + size + 'px;background:conic-gradient(' + parts.join(", ") + ')">' +
+        '<div class="donut-hole"><span class="donut-total">100%</span><span class="donut-label">' + total + ' reqs</span></div></div>' +
+        '<div class="legend">' + legend + '</div></div>';
+    }}
+
     function hbarChart(items, mode) {{
       if (!items.length) return '<div style="color:var(--muted);font-size:12px">No data</div>';
       const vals = items.map(function (i) {{ return mode === "sp" ? i.sp : i.count; }});
@@ -975,6 +1010,9 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
       document.getElementById("chartEpic").innerHTML =
         '<div class="chart-title">Story points by epic (top 10)</div>' +
         hbarChart(aggregate(rows, "epic_name", "sp", 10), "sp");
+      document.getElementById("chartBuildCount").innerHTML =
+        '<div class="chart-title">Salesforce OOTB vs Custom (% requirements)</div>' +
+        salesforceMixDonut(rows, 140);
       document.getElementById("chartStatus").innerHTML =
         '<div class="chart-title">Requirements by status</div>' +
         conicDonut(aggregate(rows, "status", "count", 8), "count", 120);
