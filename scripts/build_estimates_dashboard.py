@@ -465,9 +465,8 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
           <div class="chart-grid">
             <div class="chart-card span-6" id="chartBu"></div>
             <div class="chart-card span-6" id="chartEpic"></div>
-            <div class="chart-card span-4" id="chartStatus"></div>
-            <div class="chart-card span-4" id="chartBuild"></div>
-            <div class="chart-card span-4" id="chartPriority"></div>
+            <div class="chart-card span-6" id="chartStatus"></div>
+            <div class="chart-card span-6" id="chartBuild"></div>
           </div>
         </div>
 
@@ -724,9 +723,6 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
       document.getElementById("chartBuild").innerHTML =
         '<div class="chart-title">Story points by build type</div>' +
         conicDonut(aggregate(rows, "build_type", "sp", 6), "sp", 120);
-      document.getElementById("chartPriority").innerHTML =
-        '<div class="chart-title">Story points by priority</div>' +
-        conicDonut(aggregate(rows, "priority", "sp", 6), "sp", 120);
     }}
 
     function render() {{
