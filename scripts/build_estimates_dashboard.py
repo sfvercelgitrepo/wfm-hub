@@ -203,16 +203,20 @@ def enrich_epic_names(issues: List[Dict[str, Any]], all_rows: List[Dict[str, str
         issue["epic_name"] = resolved or clean_text(str(issue.get("epic_name") or "")) or epic_link
 
 
-def apply_build_type_rules(issues: List[Dict[str, Any]]) -> int:
+def apply_build_type_rules(issues: List[Dict[str, Any]]) -> Dict[str, int]:
     """Dashboard mapping rules (not written back to Jira)."""
-    updated = 0
+    counts = {"integrations_mulesoft": 0, "ootb_rename": 0}
     for issue in issues:
         epic_name = str(issue.get("epic_name") or "").strip()
+        build_type = str(issue.get("build_type") or "").strip()
         if epic_name == "Integrations":
             if issue.get("build_type") != "Custom:Mulesoft":
-                updated += 1
+                counts["integrations_mulesoft"] += 1
             issue["build_type"] = "Custom:Mulesoft"
-    return updated
+        elif build_type == "OOTB Config":
+            issue["build_type"] = "Salesforce : OOTB Config"
+            counts["ootb_rename"] += 1
+    return counts
 
 
 def apply_sp_rules(issues: List[Dict[str, Any]]) -> int:
@@ -1073,7 +1077,8 @@ def main() -> None:
         file_obj.write(html_out)
     print(
         f"Estimates dashboard written: {os.path.abspath(args.output)} "
-        f"({len(issues)} requirements, {remapped} Integrations → Custom:Mulesoft, "
+        f"({len(issues)} requirements, {remapped['integrations_mulesoft']} Integrations → Custom:Mulesoft, "
+        f"{remapped['ootb_rename']} OOTB Config → Salesforce : OOTB Config, "
         f"{sp_tbd} External/ISV → SP TBD)"
     )
 
