@@ -114,6 +114,12 @@
     }
     .capacity-kpi-grid .kpi-value.over { color: #f87171; }
     .capacity-kpi-grid .kpi-value.ok { color: var(--green); }
+    .capacity-alert {
+      background: rgba(251, 191, 36, 0.12); border: 1px solid rgba(251, 191, 36, 0.45);
+      border-radius: 10px; padding: 10px 14px; margin-bottom: 12px;
+      font-size: 12px; color: #fbbf24; line-height: 1.5;
+    }
+    .capacity-alert strong { color: #fcd34d; }
     .capacity-chart-card { margin-bottom: 12px; }
     .capacity-note { font-size: 11px; color: var(--muted); margin: -4px 0 14px; line-height: 1.45; }
     .burndown-wrap { width: 100%; overflow-x: auto; }
@@ -212,7 +218,7 @@
         <div>
           <div class="eyebrow">WFM Project</div>
           <h1>Estimates</h1>
-          <div class="hero-sub">Requirement effort dashboard · story points as estimate units · 517 requirements · generated Aug 13, 2026 12:20</div>
+          <div class="hero-sub">Requirement effort dashboard · story points as estimate units · 517 requirements · generated Aug 13, 2026 12:27</div>
           <span class="scope-badge">Issue Type = Requirement</span>
         </div>
         <img class="hero-charter-logo"
@@ -310,11 +316,14 @@
         </div>
 
         <div id="panelCapacity" class="view-panel" role="tabpanel">
+          <div class="capacity-alert">
+            <strong>Tight plan</strong> — Zero buffer. Assumes 1 week holiday shutdown during year-end.
+          </div>
           <div class="capacity-kpi-grid">
             <div class="kpi-card hero-kpi">
               <div class="kpi-label">Available capacity</div>
-              <div class="kpi-value" id="capTotal">2,400 SP</div>
-              <div class="kpi-sub">10 sprints · 2 weeks each</div>
+              <div class="kpi-value" id="capTotal">2,250 SP</div>
+              <div class="kpi-sub">9 sprints · 2 weeks each · 250 SP / sprint</div>
             </div>
             <div class="kpi-card">
               <div class="kpi-label">Filtered load</div>
@@ -323,13 +332,13 @@
             </div>
             <div class="kpi-card">
               <div class="kpi-label">Remaining capacity</div>
-              <div class="kpi-value" id="capRemaining">2,400 SP</div>
+              <div class="kpi-value" id="capRemaining">2,250 SP</div>
               <div class="kpi-sub" id="capRemainingSub">After full load</div>
             </div>
             <div class="kpi-card">
               <div class="kpi-label">Utilization</div>
               <div class="kpi-value" id="capUtil">0%</div>
-              <div class="kpi-sub" id="capUtilSub">Load vs 2,400 SP capacity</div>
+              <div class="kpi-sub" id="capUtilSub">Load vs 2,250 SP capacity</div>
             </div>
           </div>
           <div class="chart-card capacity-chart-card">
@@ -338,8 +347,8 @@
             <div class="burndown-wrap" id="capacityBurndown"></div>
             <div class="capacity-legend">
               <div class="capacity-legend-item"><span class="capacity-legend-line" style="background:#4a9eff"></span>Filtered load (cumulative SP)</div>
-              <div class="capacity-legend-item"><span class="capacity-legend-line dashed"></span>Planned capacity (240 SP / sprint)</div>
-              <div class="capacity-legend-item"><span class="capacity-legend-line" style="background:#fbbf24;height:2px"></span>Capacity ceiling (2,400 SP)</div>
+              <div class="capacity-legend-item"><span class="capacity-legend-line dashed"></span>Planned capacity (250 SP / sprint)</div>
+              <div class="capacity-legend-item"><span class="capacity-legend-line" style="background:#fbbf24;height:2px"></span>Capacity ceiling (2,250 SP)</div>
             </div>
           </div>
         </div>
@@ -584,9 +593,9 @@
       }).join("");
     }
 
-    const TOTAL_CAPACITY = 2400;
-    const SPRINT_COUNT = 10;
-    const CAPACITY_PER_SPRINT = TOTAL_CAPACITY / SPRINT_COUNT;
+    const TOTAL_CAPACITY = 2250;
+    const SPRINT_COUNT = 9;
+    const CAPACITY_PER_SPRINT = 250;
 
     function formatSp(value) {
       const rounded = Math.round(value * 10) / 10;
@@ -604,6 +613,7 @@
       const completionSprint = totalSp > 0 ? Math.ceil(totalSp / CAPACITY_PER_SPRINT) : 0;
       const maxSprint = Math.max(SPRINT_COUNT, completionSprint);
 
+      document.getElementById("capTotal").textContent = formatSpLabel(TOTAL_CAPACITY);
       document.getElementById("capLoad").textContent = formatSpLabel(totalSp);
       const remEl = document.getElementById("capRemaining");
       remEl.textContent = formatSpLabel(remainingAfterLoad);
@@ -615,10 +625,11 @@
       utilEl.textContent = Math.round(utilization) + "%";
       utilEl.className = "kpi-value" + (utilization > 100 ? " over" : "");
       document.getElementById("capUtilSub").textContent = utilization > 100
-        ? "Exceeds 2,400 SP capacity"
-        : "Load vs 2,400 SP capacity";
+        ? ("Exceeds " + formatSpLabel(TOTAL_CAPACITY) + " capacity")
+        : ("Load vs " + formatSpLabel(TOTAL_CAPACITY) + " capacity");
 
-      let note = "Delivery rate 240 SP / sprint · Plan horizon sprint " + SPRINT_COUNT + " (2,400 SP capacity)";
+      let note = "Delivery rate " + CAPACITY_PER_SPRINT + " SP / sprint · Plan horizon sprint " + SPRINT_COUNT +
+        " (" + formatSpLabel(TOTAL_CAPACITY) + " capacity) · Zero buffer";
       if (totalSp > 0) {
         note += " · Projected completion sprint " + completionSprint + " (" + formatSpLabel(totalSp) + ")";
         if (completionSprint > SPRINT_COUNT) {
@@ -664,7 +675,7 @@
       grid += '<line x1="' + pad.left + '" y1="' + yCap + '" x2="' + (width - pad.right) + '" y2="' + yCap +
         '" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5 4"/>';
       grid += '<text x="' + (width - pad.right + 4) + '" y="' + yCap +
-        '" fill="#fbbf24" font-size="9" dominant-baseline="middle">2,400 SP</text>';
+        '" fill="#fbbf24" font-size="9" dominant-baseline="middle">' + formatSpLabel(TOTAL_CAPACITY) + '</text>';
 
       if (maxSprint > SPRINT_COUNT) {
         const xPlan = xAt(SPRINT_COUNT).toFixed(1);
