@@ -128,6 +128,7 @@ def build_issue(row: Dict[str, str]) -> Dict[str, Any]:
             issue[f"{key}_month"] = month_key(raw)
         else:
             issue[key] = raw
+    issue["jira_build_type"] = clean_text(row.get("Build Type (customfield_10577)", ""))
     return issue
 
 
@@ -264,7 +265,8 @@ def apply_sp_rules(issues: List[Dict[str, Any]]) -> int:
     """Show External/ISV story points as TBD (excluded from SP totals/charts)."""
     updated = 0
     for issue in issues:
-        if str(issue.get("build_type") or "").strip() == "External/ISV":
+        raw_build_type = str(issue.get("jira_build_type") or issue.get("build_type") or "").strip()
+        if raw_build_type == "External/ISV":
             issue["sp_tbd"] = True
             if issue.get("story_points") is not None:
                 updated += 1
@@ -312,10 +314,28 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
     h1 {{ margin: 0; font-size: 22px; line-height: 1.2; }}
     .hero-sub {{ margin-top: 6px; font-size: 12px; color: rgba(255,255,255,0.88); max-width: 760px; line-height: 1.45; }}
     .hero-charter-logo {{ height: 40px; object-fit: contain; background: white; padding: 4px 8px; border-radius: 6px; flex-shrink: 0; }}
+    .hero-scope-bar {{
+      margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      border: 1px solid rgba(255,255,255,0.22); border-radius: 999px; padding: 6px 10px;
+      background: rgba(255,255,255,0.06); width: fit-content; max-width: 100%;
+    }}
     .scope-badge {{
-      display: inline-block; margin-top: 8px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+      display: inline-block; flex-shrink: 0; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
       border-radius: 999px; padding: 4px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
     }}
+    .hero-scope-label {{
+      flex-shrink: 0;
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+      color: rgba(255,255,255,0.65);
+    }}
+    .hero-scope-chips {{ display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 8px; }}
+    .hero-scope-chip {{
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.88);
+      border-radius: 999px; padding: 6px 12px; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap;
+    }}
+    .hero-scope-chip:hover {{ border-color: rgba(255,255,255,0.45); color: #fff; }}
+    .hero-scope-chip.active {{ background: #fff; color: #1f3a5f; border-color: #fff; }}
     .layout {{ display: grid; grid-template-columns: 260px 1fr; gap: 12px; margin-top: 12px; align-items: start; }}
     .sidebar {{
       background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
@@ -371,6 +391,7 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
     .legend-swatch {{ width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }}
     .legend-label {{ flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
     .legend-val {{ font-weight: 700; color: #fff; white-space: nowrap; }}
+    .legend-val-tbd {{ color: var(--gold); }}
     .hbar-row {{ display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }}
     .hbar-row:last-child {{ margin-bottom: 0; }}
     .hbar-label {{ width: 110px; flex-shrink: 0; font-size: 10px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
@@ -510,7 +531,11 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
           <div class="eyebrow">WFM Project</div>
           <h1>Estimates</h1>
           <div class="hero-sub">Requirement effort dashboard · story points as estimate units · {len(issues)} requirements · generated {generated}</div>
-          <span class="scope-badge">Issue Type = Requirement</span>
+          <div class="hero-scope-bar">
+            <span class="scope-badge">Issue Type = Requirement</span>
+            <div class="hero-scope-label">Scope</div>
+            <div class="hero-scope-chips" id="scopeQuickFilters"></div>
+          </div>
         </div>
         <img class="hero-charter-logo"
           src="https://corporate.charter.com/static/d617519f6e8ec1333149b2e86dd914fb/58aae/Charter_Communications_Logo_Preview_0.jpg"
@@ -615,7 +640,7 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
             <div class="kpi-card hero-kpi">
               <div class="kpi-label">Available capacity</div>
               <div class="kpi-value" id="capTotal">2,250 SP</div>
-              <div class="kpi-sub">9 sprints · 2 weeks each · 250 SP / sprint</div>
+              <div class="kpi-sub" id="capTotalSub">9 sprints · 2 weeks each · 250 SP / sprint</div>
             </div>
             <div class="kpi-card">
               <div class="kpi-label">Filtered load</div>
@@ -639,8 +664,8 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
             <div class="burndown-wrap" id="capacityBurndown"></div>
             <div class="capacity-legend">
               <div class="capacity-legend-item"><span class="capacity-legend-line" style="background:#4a9eff"></span>Filtered load (cumulative SP)</div>
-              <div class="capacity-legend-item"><span class="capacity-legend-line dashed"></span>Planned capacity (250 SP / sprint)</div>
-              <div class="capacity-legend-item"><span class="capacity-legend-line" style="background:#fbbf24;height:2px"></span>Capacity ceiling (2,250 SP)</div>
+              <div class="capacity-legend-item"><span class="capacity-legend-line dashed"></span><span id="capLegendRate">Planned capacity (250 SP / sprint)</span></div>
+              <div class="capacity-legend-item"><span class="capacity-legend-line" style="background:#fbbf24;height:2px"></span><span id="capLegendCeiling">Capacity ceiling (2,250 SP)</span></div>
             </div>
           </div>
         </div>
@@ -695,6 +720,7 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
       business_units: new Set(),
       fix_versions: new Set(),
     }};
+    let scopeFilter = "";
 
     function escapeHtml(v) {{
       return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -779,6 +805,34 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
       buildQuickFilterGroup("fixVersionQuickFilters", "fix_versions", DATA.fixVersionOptions);
     }}
 
+    function buildScopeFilters() {{
+      const el = document.getElementById("scopeQuickFilters");
+      const options = [
+        {{ value: "", label: "All" }},
+        {{ value: "salesforce", label: "Salesforce" }},
+        {{ value: "mulesoft", label: "Mulesoft" }},
+      ];
+      el.innerHTML = options.map(function (opt) {{
+        const active = scopeFilter === opt.value ? " active" : "";
+        return '<button type="button" class="hero-scope-chip' + active + '" data-value="' + opt.value + '">' +
+          escapeHtml(opt.label) + '</button>';
+      }}).join("");
+      el.querySelectorAll(".hero-scope-chip").forEach(function (btn) {{
+        btn.addEventListener("click", function () {{
+          scopeFilter = btn.dataset.value || "";
+          buildScopeFilters();
+          render();
+        }});
+      }});
+    }}
+
+    function matchesScopeFilter(issue) {{
+      const epic = String(issue.epic_name || "").trim();
+      if (scopeFilter === "mulesoft") return epic === "Integrations";
+      if (scopeFilter === "salesforce") return epic !== "Integrations";
+      return true;
+    }}
+
     function matchesQuickFilters(issue) {{
       if (quickFilterSelections.business_units.size) {{
         const bu = String(issue.business_units || "").trim() || "(Blank)";
@@ -831,41 +885,69 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
       const map = {{}};
       rows.forEach(function (r) {{
         const key = String(r[field] || "").trim() || "(Blank)";
-        if (!map[key]) map[key] = {{ label: key, sp: 0, count: 0 }};
+        if (!map[key]) map[key] = {{ label: key, sp: 0, count: 0, tbd: 0 }};
         map[key].count += 1;
-        if (r.story_points != null && !r.sp_tbd) map[key].sp += r.story_points;
+        if (r.sp_tbd) map[key].tbd += 1;
+        else if (r.story_points != null && !r.sp_tbd) map[key].sp += r.story_points;
       }});
       let items = Object.values(map);
-      if (mode === "sp") items.sort(function (a, b) {{ return b.sp - a.sp; }});
-      else items.sort(function (a, b) {{ return b.count - a.count; }});
-      if (limit) items = items.slice(0, limit);
+      if (mode === "sp") {{
+        items.sort(function (a, b) {{ return b.sp - a.sp; }});
+        if (limit) {{
+          const withSp = items.filter(function (i) {{ return i.sp > 0; }});
+          const tbdOnly = items.filter(function (i) {{ return i.sp === 0 && i.tbd > 0; }});
+          items = withSp.slice(0, limit).concat(tbdOnly);
+        }}
+      }} else {{
+        items.sort(function (a, b) {{ return b.count - a.count; }});
+        if (limit) items = items.slice(0, limit);
+      }}
       return items;
     }}
 
+    function formatAggregateVal(item, mode) {{
+      if (mode === "sp") {{
+        if (item.tbd > 0 && item.sp === 0) return "TBD";
+        if (item.tbd > 0) return item.sp + " SP · " + item.tbd + " TBD";
+        return item.sp + " SP";
+      }}
+      return String(item.count);
+    }}
+
     function conicDonut(items, mode, size) {{
+      const sliceItems = mode === "sp"
+        ? items.filter(function (i) {{ return i.sp > 0; }})
+        : items;
       const metric = mode === "sp"
-        ? items.map(function (i) {{ return i.sp; }})
+        ? sliceItems.map(function (i) {{ return i.sp; }})
         : items.map(function (i) {{ return i.count; }});
       const total = metric.reduce(function (s, v) {{ return s + v; }}, 0);
-      if (!total) return '<div class="chart-row"><div style="color:var(--muted);font-size:12px">No data</div></div>';
+      if (!total && !items.some(function (i) {{ return i.tbd > 0; }})) {{
+        return '<div class="chart-row"><div style="color:var(--muted);font-size:12px">No data</div></div>';
+      }}
       let offset = 0;
-      const parts = items.map(function (item, idx) {{
+      const parts = sliceItems.map(function (item, idx) {{
         const val = mode === "sp" ? item.sp : item.count;
-        const pct = val / total * 100;
+        const pct = total ? val / total * 100 : 0;
         const color = COLORS[idx % COLORS.length];
         const seg = color + " " + offset.toFixed(2) + "% " + (offset + pct).toFixed(2) + "%";
         offset += pct;
         return seg;
       }});
       const legend = items.map(function (item, idx) {{
-        const val = mode === "sp" ? item.sp : item.count;
-        const color = COLORS[idx % COLORS.length];
+        const sliceIdx = sliceItems.indexOf(item);
+        const color = sliceIdx >= 0 ? COLORS[sliceIdx % COLORS.length] : "#fbbf24";
+        const valText = formatAggregateVal(item, mode);
+        const valClass = item.tbd > 0 && item.sp === 0 ? " legend-val-tbd" : "";
         return '<div class="legend-item"><span class="legend-swatch" style="background:' + color + '"></span>' +
           '<span class="legend-label">' + escapeHtml(item.label) + '</span>' +
-          '<span class="legend-val">' + (mode === "sp" ? val + " SP" : val) + '</span></div>';
+          '<span class="legend-val' + valClass + '">' + escapeHtml(valText) + '</span></div>';
       }}).join("");
+      const donutBg = parts.length
+        ? 'background:conic-gradient(' + parts.join(", ") + ')'
+        : 'background:var(--surface-2);border:2px dashed rgba(251,191,36,.45)';
       return '<div class="chart-row">' +
-        '<div class="donut" style="width:' + size + 'px;height:' + size + 'px;background:conic-gradient(' + parts.join(", ") + ')">' +
+        '<div class="donut" style="width:' + size + 'px;height:' + size + 'px;' + donutBg + '">' +
         '<div class="donut-hole"><span class="donut-total">' + Math.round(total * 10) / 10 + '</span><span class="donut-label">' + (mode === "sp" ? "SP" : "Count") + '</span></div></div>' +
         '<div class="legend">' + legend + '</div></div>';
     }}
@@ -927,9 +1009,14 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
       }}).join("");
     }}
 
-    const TOTAL_CAPACITY = 2250;
     const SPRINT_COUNT = 9;
-    const CAPACITY_PER_SPRINT = 250;
+
+    function getCapacityPlan() {{
+      if (scopeFilter === "mulesoft") {{
+        return {{ perSprint: 80, sprintCount: SPRINT_COUNT, total: SPRINT_COUNT * 80, scopeLabel: "Mulesoft" }};
+      }}
+      return {{ perSprint: 250, sprintCount: SPRINT_COUNT, total: SPRINT_COUNT * 250, scopeLabel: "Salesforce" }};
+    }}
 
     function formatSp(value) {{
       const rounded = Math.round(value * 10) / 10;
@@ -941,13 +1028,18 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
     }}
 
     function renderCapacity(totalSp) {{
+      const plan = getCapacityPlan();
+      const TOTAL_CAPACITY = plan.total;
+      const CAPACITY_PER_SPRINT = plan.perSprint;
       const remainingAfterLoad = TOTAL_CAPACITY - totalSp;
       const utilization = TOTAL_CAPACITY ? (totalSp / TOTAL_CAPACITY) * 100 : 0;
       const over = remainingAfterLoad < 0;
       const completionSprint = totalSp > 0 ? Math.ceil(totalSp / CAPACITY_PER_SPRINT) : 0;
-      const maxSprint = Math.max(SPRINT_COUNT, completionSprint);
+      const maxSprint = Math.max(plan.sprintCount, completionSprint);
 
       document.getElementById("capTotal").textContent = formatSpLabel(TOTAL_CAPACITY);
+      document.getElementById("capTotalSub").textContent =
+        plan.sprintCount + " sprints · 2 weeks each · " + CAPACITY_PER_SPRINT + " SP / sprint · " + plan.scopeLabel;
       document.getElementById("capLoad").textContent = formatSpLabel(totalSp);
       const remEl = document.getElementById("capRemaining");
       remEl.textContent = formatSpLabel(remainingAfterLoad);
@@ -961,13 +1053,17 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
       document.getElementById("capUtilSub").textContent = utilization > 100
         ? ("Exceeds " + formatSpLabel(TOTAL_CAPACITY) + " capacity")
         : ("Load vs " + formatSpLabel(TOTAL_CAPACITY) + " capacity");
+      document.getElementById("capLegendRate").textContent =
+        "Planned capacity (" + CAPACITY_PER_SPRINT + " SP / sprint · " + plan.scopeLabel + ")";
+      document.getElementById("capLegendCeiling").textContent =
+        "Capacity ceiling (" + formatSpLabel(TOTAL_CAPACITY) + ")";
 
-      let note = "Delivery rate " + CAPACITY_PER_SPRINT + " SP / sprint · Plan horizon sprint " + SPRINT_COUNT +
+      let note = plan.scopeLabel + " · Delivery rate " + CAPACITY_PER_SPRINT + " SP / sprint · Plan horizon sprint " + plan.sprintCount +
         " (" + formatSpLabel(TOTAL_CAPACITY) + " capacity) · Zero buffer";
       if (totalSp > 0) {{
         note += " · Projected completion sprint " + completionSprint + " (" + formatSpLabel(totalSp) + ")";
-        if (completionSprint > SPRINT_COUNT) {{
-          note += " · " + (completionSprint - SPRINT_COUNT) + " sprints beyond plan";
+        if (completionSprint > plan.sprintCount) {{
+          note += " · " + (completionSprint - plan.sprintCount) + " sprints beyond plan";
         }}
       }}
       document.getElementById("capNote").textContent = note;
@@ -1011,12 +1107,12 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
       grid += '<text x="' + (width - pad.right + 4) + '" y="' + yCap +
         '" fill="#fbbf24" font-size="9" dominant-baseline="middle">' + formatSpLabel(TOTAL_CAPACITY) + '</text>';
 
-      if (maxSprint > SPRINT_COUNT) {{
-        const xPlan = xAt(SPRINT_COUNT).toFixed(1);
+      if (maxSprint > plan.sprintCount) {{
+        const xPlan = xAt(plan.sprintCount).toFixed(1);
         grid += '<line x1="' + xPlan + '" y1="' + pad.top + '" x2="' + xPlan + '" y2="' + (height - pad.bottom) +
           '" stroke="#5f7388" stroke-width="1" stroke-dasharray="4 4"/>';
         grid += '<text x="' + xPlan + '" y="' + (pad.top - 8) +
-          '" fill="#8b9cb3" font-size="9" text-anchor="middle">S' + SPRINT_COUNT + " plan</text>";
+          '" fill="#8b9cb3" font-size="9" text-anchor="middle">S' + plan.sprintCount + " plan</text>";
       }}
 
       let xLabels = "";
@@ -1073,7 +1169,7 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
 
     function render() {{
       const rows = DATA.issues.filter(function (issue) {{
-        return matchIssue(issue, readFilters()) && matchesQuickFilters(issue);
+        return matchIssue(issue, readFilters()) && matchesQuickFilters(issue) && matchesScopeFilter(issue);
       }});
       const withSp = rows.filter(function (r) {{ return !r.sp_tbd && r.story_points != null; }});
       const tbdSp = rows.filter(function (r) {{ return r.sp_tbd; }});
@@ -1127,6 +1223,7 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
 
     buildFilters();
     buildQuickFilters();
+    buildScopeFilters();
     document.getElementById("clearBtn").addEventListener("click", function () {{
       DATA.fields.forEach(function (field) {{
         const el = document.getElementById("f-" + field.key);
@@ -1134,7 +1231,9 @@ def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]]
       }});
       quickFilterSelections.business_units.clear();
       quickFilterSelections.fix_versions.clear();
+      scopeFilter = "";
       syncQuickFilters();
+      buildScopeFilters();
       render();
     }});
     filtersEl.addEventListener("change", render);
@@ -1156,8 +1255,8 @@ def main() -> None:
         if (row.get("Issue Type") or "").strip() == "Requirement"
     ]
     enrich_epic_names(issues, rows)
-    remapped = apply_build_type_rules(issues)
     sp_tbd = apply_sp_rules(issues)
+    remapped = apply_build_type_rules(issues)
     field_meta = analyze_fields(issues)
     html_out = generate_html(issues, field_meta, args.input)
     os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
