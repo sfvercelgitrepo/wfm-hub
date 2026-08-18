@@ -419,7 +419,7 @@ def generate_html(
     }})();
 
     function gateSubmit() {{
-      var val = document.getElementById("gate-input").value;
+      var val = document.getElementById("gate-input").value.trim().toLowerCase();
       if (val === HUB_PASS) {{
         sessionStorage.setItem(HUB_KEY, "1");
         var g = document.getElementById("gate");
@@ -433,6 +433,8 @@ def generate_html(
         wrap.classList.remove("gate-shake");
         void wrap.offsetWidth;
         wrap.classList.add("gate-shake");
+        document.getElementById("gate-input").value = "";
+        document.getElementById("gate-input").focus();
       }}
     }}
 
@@ -713,7 +715,6 @@ def generate_html(
       document.getElementById("reqModalMeta").textContent =
         rows.length + " of " + modalBaseRows.length + " requirement" + (modalBaseRows.length === 1 ? "" : "s") +
         buLabel + " (page filters applied)";
-      const body = document.getElementById("reqModalBody");
       if (!rows.length) {{
         body.innerHTML = '<div class="req-modal-empty">No requirements match the selected business unit.</div>';
         return;
