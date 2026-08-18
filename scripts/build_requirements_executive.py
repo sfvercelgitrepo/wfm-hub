@@ -52,6 +52,7 @@ def generate_html(
     generated = datetime.now().strftime("%b %d, %Y %H:%M")
     source_name = html.escape(os.path.basename(source))
     fix_version_options = bed.field_value_options(issues, "fix_versions")
+    bu_options = bed.field_value_options(issues, "business_units")
     scope_chip_options = [("", "All"), ("salesforce", "Salesforce"), ("mulesoft", "Mulesoft")]
     capability_chip_options = [("", "All")] + [
         (str(cap.get("key") or ""), str(cap.get("summary") or cap.get("key") or ""))
@@ -61,12 +62,15 @@ def generate_html(
     scope_chips = filter_chips_html(scope_chip_options)
     capability_chips = filter_chips_html(capability_chip_options)
     fix_version_chips = filter_chips_html(fix_version_chip_options)
+    bu_chip_options = [("", "All")] + [(value, value) for value in bu_options]
+    modal_bu_chips = filter_chips_html(bu_chip_options)
     data_json = json.dumps(
         {
             "issues": issues,
             "capabilityTree": capability_tree,
             "capabilityParent": capability_parent,
             "fixVersionOptions": fix_version_options,
+            "buOptions": bu_options,
         },
         separators=(",", ":"),
     )
@@ -258,7 +262,16 @@ def generate_html(
     }}
     .req-modal-close:hover {{ color: var(--text); border-color: var(--accent); }}
     .req-modal-meta {{ padding: 8px 16px; font-size: 11px; color: var(--muted); border-bottom: 1px solid var(--border); }}
-    .req-modal-body {{ overflow: auto; padding: 0; }}
+    .req-modal-filters {{
+      display: flex; align-items: flex-start; gap: 12px; padding: 10px 16px;
+      border-bottom: 1px solid var(--border); background: rgba(15,20,25,.35);
+    }}
+    .req-modal-filter-label {{
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--accent); min-width: 88px; padding-top: 6px; flex-shrink: 0;
+    }}
+    .req-modal-filters .filter-chips {{ flex: 1; }}
+    .req-modal-body {{ overflow: auto; padding: 0; flex: 1; min-height: 0; }}
     .req-modal-table {{ width: 100%; border-collapse: collapse; }}
     .req-modal-table th {{
       position: sticky; top: 0; background: #252f3f; padding: 8px 10px; text-align: left;
@@ -383,6 +396,10 @@ def generate_html(
         <button type="button" class="req-modal-close" id="reqModalClose" aria-label="Close">&times;</button>
       </div>
       <div class="req-modal-meta" id="reqModalMeta"></div>
+      <div class="req-modal-filters">
+        <div class="req-modal-filter-label">Business unit</div>
+        <div class="filter-chips" id="reqModalBuFilters">{modal_bu_chips}</div>
+      </div>
       <div class="req-modal-body" id="reqModalBody"></div>
     </div>
   </div>
@@ -436,6 +453,10 @@ def generate_html(
     let capabilityFilter = "";
     let fixVersionFilter = "";
     let lastFilteredRows = [];
+    let modalNodeKey = "";
+    let modalNodeTitle = "";
+    let modalBuFilter = "";
+    let modalBaseRows = [];
 
     function syncFilterActiveStates() {{
       document.querySelectorAll("#scopeQuickFilters .filter-chip").forEach(function (btn) {{
@@ -661,35 +682,80 @@ def generate_html(
       const modal = document.getElementById("reqModal");
       modal.classList.remove("open");
       modal.setAttribute("aria-hidden", "true");
+      modalNodeKey = "";
+      modalNodeTitle = "";
+      modalBuFilter = "";
+      modalBaseRows = [];
+    }}
+
+    function syncModalBuFilterStates() {{
+      document.querySelectorAll("#reqModalBuFilters .filter-chip").forEach(function (btn) {{
+        btn.classList.toggle("active", (btn.dataset.value || "") === modalBuFilter);
+      }});
+    }}
+
+    function matchesModalBuFilter(issue) {{
+      if (!modalBuFilter) return true;
+      const bu = String(issue.business_units || "").trim() || "(Blank)";
+      return bu === modalBuFilter;
+    }}
+
+    function renderModalContent() {{
+      document.getElementById("reqModalTitle").textContent = modalNodeTitle || modalNodeKey;
+      const body = document.getElementById("reqModalBody");
+      if (!modalBaseRows.length) {{
+        document.getElementById("reqModalMeta").textContent = "0 requirements (page filters applied)";
+        body.innerHTML = '<div class="req-modal-empty">No requirements roll up to this node for the current filters.</div>';
+        return;
+      }}
+      const rows = modalBaseRows.filter(matchesModalBuFilter);
+      const buLabel = modalBuFilter ? (" · " + modalBuFilter) : "";
+      document.getElementById("reqModalMeta").textContent =
+        rows.length + " of " + modalBaseRows.length + " requirement" + (modalBaseRows.length === 1 ? "" : "s") +
+        buLabel + " (page filters applied)";
+      const body = document.getElementById("reqModalBody");
+      if (!rows.length) {{
+        body.innerHTML = '<div class="req-modal-empty">No requirements match the selected business unit.</div>';
+        return;
+      }}
+      body.innerHTML =
+        '<table class="req-modal-table"><thead><tr>' +
+        '<th>Key</th><th>Summary</th><th>Business unit</th><th>Status</th><th>Fix version</th>' +
+        '</tr></thead><tbody>' +
+        rows.map(function (issue) {{
+          const keyLink = '<a href="' + JIRA_BASE + '/browse/' + encodeURIComponent(issue.issue_key) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(issue.issue_key) + '</a>';
+          const bu = String(issue.business_units || "").trim() || "—";
+          return '<tr>' +
+            '<td class="mono">' + keyLink + '</td>' +
+            '<td title="' + escapeHtml(issue.summary) + '">' + escapeHtml(issue.summary) + '</td>' +
+            '<td>' + escapeHtml(bu) + '</td>' +
+            '<td>' + escapeHtml(issue.status || "—") + '</td>' +
+            '<td>' + escapeHtml(issue.fix_versions || "—") + '</td>' +
+          '</tr>';
+        }}).join("") +
+        '</tbody></table>';
     }}
 
     function openReqModal(nodeKey, nodeTitle) {{
-      const rows = requirementsForNode(nodeKey, lastFilteredRows);
-      document.getElementById("reqModalTitle").textContent = nodeTitle || nodeKey;
-      document.getElementById("reqModalMeta").textContent = rows.length + " requirement" + (rows.length === 1 ? "" : "s") + " (current filters)";
-      const body = document.getElementById("reqModalBody");
-      if (!rows.length) {{
-        body.innerHTML = '<div class="req-modal-empty">No requirements roll up to this node for the current filters.</div>';
-      }} else {{
-        body.innerHTML =
-          '<table class="req-modal-table"><thead><tr>' +
-          '<th>Key</th><th>Summary</th><th>Status</th><th>Fix version</th>' +
-          '</tr></thead><tbody>' +
-          rows.map(function (issue) {{
-            const keyLink = '<a href="' + JIRA_BASE + '/browse/' + encodeURIComponent(issue.issue_key) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(issue.issue_key) + '</a>';
-            return '<tr>' +
-              '<td class="mono">' + keyLink + '</td>' +
-              '<td title="' + escapeHtml(issue.summary) + '">' + escapeHtml(issue.summary) + '</td>' +
-              '<td>' + escapeHtml(issue.status || "—") + '</td>' +
-              '<td>' + escapeHtml(issue.fix_versions || "—") + '</td>' +
-            '</tr>';
-          }}).join("") +
-          '</tbody></table>';
-      }}
+      modalNodeKey = nodeKey;
+      modalNodeTitle = nodeTitle || nodeKey;
+      modalBuFilter = "";
+      modalBaseRows = requirementsForNode(nodeKey, lastFilteredRows);
+      syncModalBuFilterStates();
+      renderModalContent();
       const modal = document.getElementById("reqModal");
       modal.classList.add("open");
       modal.setAttribute("aria-hidden", "false");
     }}
+
+    document.getElementById("reqModal").addEventListener("click", function (event) {{
+      const buBtn = event.target.closest("#reqModalBuFilters .filter-chip");
+      if (buBtn) {{
+        modalBuFilter = buBtn.dataset.value || "";
+        syncModalBuFilterStates();
+        renderModalContent();
+      }}
+    }});
 
     document.getElementById("capabilityTree").addEventListener("click", function (event) {{
       const btn = event.target.closest(".cap-map-count[data-node-key]");
