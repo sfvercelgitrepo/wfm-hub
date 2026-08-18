@@ -1133,7 +1133,7 @@ def generate_html(
 
     function getCapacityPlan() {{
       if (scopeFilter === "mulesoft") {{
-        return {{ perSprint: 80, sprintCount: SPRINT_COUNT, total: SPRINT_COUNT * 80, scopeLabel: "Mulesoft" }};
+        return {{ perSprint: 200, sprintCount: SPRINT_COUNT, total: SPRINT_COUNT * 200, scopeLabel: "Mulesoft" }};
       }}
       return {{ perSprint: 250, sprintCount: SPRINT_COUNT, total: SPRINT_COUNT * 250, scopeLabel: "Salesforce" }};
     }}
