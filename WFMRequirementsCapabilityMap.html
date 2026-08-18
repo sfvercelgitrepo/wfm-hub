@@ -88,36 +88,58 @@
       border: 1px solid var(--border); border-radius: 10px;
     }
     .cap-map { width: 100%; }
-    .cap-map-row { display: flex; width: 100%; align-items: stretch; }
+    .cap-map-row { display: flex; width: 100%; align-items: flex-start; }
     .cap-map-seg {
-      flex: 1 1 0; min-width: 0; padding: 0 5px;
+      flex: 1 1 0; min-width: 0; padding: 0 6px;
       border-right: 1px solid rgba(74,93,120,.35);
-      display: flex; flex-direction: column; align-items: stretch;
     }
     .cap-map-seg:last-child { border-right: none; }
-    .cap-map-bridge { height: 22px; }
-    .cap-map-bridge-features { height: 16px; }
-    .cap-map-bridge .cap-map-seg {
-      position: relative; display: flex; justify-content: center; align-items: flex-start;
+    .cap-tree {
+      display: flex; flex-direction: column; align-items: center; width: 100%;
     }
-    .cap-map-bridge .cap-map-seg::before {
-      content: ""; width: 2px; height: 22px; background: #4a5d78;
+    .cap-tree > .cap-map-card { width: 100%; max-width: 220px; }
+    .cap-tree-vline {
+      width: 2px; height: 20px; background: #5a7190; flex-shrink: 0;
     }
-    .cap-map-bridge-features .cap-map-seg::after {
-      content: ""; position: absolute; top: 0; left: 8%; right: 8%; height: 2px; background: #4a5d78;
+    .cap-tree-branches {
+      display: flex; width: 100%; gap: 8px; position: relative; padding-top: 20px;
     }
-    .cap-map-bridge-features .cap-map-subcol::before {
-      content: ""; width: 2px; height: 14px; background: #4a5d78; margin: 0 auto;
+    .cap-tree-branches::before {
+      content: ""; position: absolute; top: 0; height: 2px; background: #5a7190;
+      left: calc(100% / var(--branch-count) / 2);
+      right: calc(100% / var(--branch-count) / 2);
+    }
+    .cap-tree-branches.single { padding-top: 0; }
+    .cap-tree-branches.single::before { display: none; }
+    .cap-tree-branch {
+      flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center;
+      position: relative;
+    }
+    .cap-tree-vline-in {
+      position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+      width: 2px; height: 20px; background: #5a7190;
+    }
+    .cap-tree-branches.single .cap-tree-vline-in { display: none; }
+    .cap-tree-branch > .cap-map-card { width: 100%; }
+    .cap-tree-epics {
+      display: flex; flex-direction: column; gap: 6px; width: 100%; align-items: stretch;
     }
     .cap-map-layer-label {
       font-size: 9px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
-      color: var(--muted); text-align: center; margin: 0 0 8px;
+      color: var(--muted); text-align: center; margin: 0 0 10px;
     }
-    .cap-map-nodes { display: flex; gap: 6px; align-items: stretch; width: 100%; }
-    .cap-map-node-slot { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; }
-    .cap-map-subcols { display: flex; gap: 6px; width: 100%; align-items: flex-start; }
-    .cap-map-subcol { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; }
-    .cap-map-epic-stack { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+    .cap-map-legend-row {
+      display: flex; justify-content: center; gap: 18px; flex-wrap: wrap;
+      font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--muted); margin-bottom: 12px;
+    }
+    .cap-map-legend-row span { display: inline-flex; align-items: center; gap: 6px; }
+    .cap-map-legend-row i {
+      display: inline-block; width: 10px; height: 10px; border-radius: 2px; font-style: normal;
+    }
+    .cap-map-legend-row .leg-cap { background: rgba(74,158,255,.45); }
+    .cap-map-legend-row .leg-feat { background: rgba(61,214,198,.45); }
+    .cap-map-legend-row .leg-epic { background: rgba(167,139,250,.45); }
     .cap-map-card {
       width: 100%; padding: 8px 8px 10px; background: var(--surface-2);
       border: 2px solid var(--border); border-radius: 8px; box-shadow: 0 3px 10px rgba(0,0,0,.18);
@@ -257,7 +279,7 @@
         <div>
           <div class="eyebrow">WFM Project</div>
           <h1>Requirements Capability Map</h1>
-          <div class="hero-sub">Capability → Feature → Epic tree · requirement counts roll up · 634 requirements · generated Aug 18, 2026 12:36</div>
+          <div class="hero-sub">Capability → Feature → Epic tree · requirement counts roll up · 634 requirements · generated Aug 18, 2026 12:40</div>
           <div class="hero-scope-bar">
             <span class="scope-badge">Issue Type = Requirement</span>
           </div>
@@ -342,7 +364,7 @@
     })();
 
     function gateSubmit() {
-      var val = document.getElementById("gate-input").value;
+      var val = document.getElementById("gate-input").value.trim().toLowerCase();
       if (val === HUB_PASS) {
         sessionStorage.setItem(HUB_KEY, "1");
         var g = document.getElementById("gate");
@@ -356,6 +378,8 @@
         wrap.classList.remove("gate-shake");
         void wrap.offsetWidth;
         wrap.classList.add("gate-shake");
+        document.getElementById("gate-input").value = "";
+        document.getElementById("gate-input").focus();
       }
     }
 
@@ -519,67 +543,40 @@
       }
 
       let html = '<div class="cap-map">';
-      html += '<div class="cap-map-layer-label">Capabilities</div>';
-      html += '<div class="cap-map-row">';
-      roots.forEach(function (cap) {
-        html += '<div class="cap-map-seg">' + renderCapCard(cap, counts, "capability") + '</div>';
-      });
-      html += '</div>';
-
-      html += '<div class="cap-map-row cap-map-bridge">';
-      roots.forEach(function () { html += '<div class="cap-map-seg"></div>'; });
-      html += '</div>';
-
-      html += '<div class="cap-map-layer-label">Features</div>';
+      html += '<div class="cap-map-legend-row">' +
+        '<span><i class="leg-cap"></i> Capability</span>' +
+        '<span><i class="leg-feat"></i> Feature</span>' +
+        '<span><i class="leg-epic"></i> Epic</span>' +
+      '</div>';
       html += '<div class="cap-map-row">';
       roots.forEach(function (cap) {
         const features = cap.children || [];
-        html += '<div class="cap-map-seg"><div class="cap-map-nodes">';
-        if (!features.length) {
-          html += '<div class="cap-map-node-slot"><div class="cap-map-card feature"><div class="cap-map-type">Feature</div><div class="cap-map-title">—</div></div></div>';
-        } else {
+        html += '<div class="cap-map-seg"><div class="cap-tree">';
+        html += renderCapCard(cap, counts, "capability");
+        if (features.length) {
+          html += '<div class="cap-tree-vline"></div>';
+          const branchClass = features.length === 1 ? "cap-tree-branches single" : "cap-tree-branches";
+          html += '<div class="' + branchClass + '" style="--branch-count:' + features.length + '">';
           features.forEach(function (feat) {
-            html += '<div class="cap-map-node-slot">' + renderCapCard(feat, counts, "feature") + '</div>';
-          });
-        }
-        html += '</div></div>';
-      });
-      html += '</div>';
-
-      html += '<div class="cap-map-row cap-map-bridge cap-map-bridge-features">';
-      roots.forEach(function (cap) {
-        const features = cap.children || [];
-        html += '<div class="cap-map-seg"><div class="cap-map-subcols">';
-        if (!features.length) {
-          html += '<div class="cap-map-subcol"></div>';
-        } else {
-          features.forEach(function () { html += '<div class="cap-map-subcol"></div>'; });
-        }
-        html += '</div></div>';
-      });
-      html += '</div>';
-
-      html += '<div class="cap-map-layer-label">Epics</div>';
-      html += '<div class="cap-map-row">';
-      roots.forEach(function (cap) {
-        const features = cap.children || [];
-        html += '<div class="cap-map-seg"><div class="cap-map-subcols">';
-        if (!features.length) {
-          html += '<div class="cap-map-subcol"><div class="cap-map-epic-stack"></div></div>';
-        } else {
-          features.forEach(function (feat) {
+            html += '<div class="cap-tree-branch">';
+            html += '<div class="cap-tree-vline-in"></div>';
+            html += renderCapCard(feat, counts, "feature");
             const epics = epicLevelNodes(feat);
-            html += '<div class="cap-map-subcol"><div class="cap-map-epic-stack">';
-            epics.forEach(function (epic) {
-              html += renderCapCard(epic, counts, "epic");
-            });
-            html += '</div></div>';
+            if (epics.length) {
+              html += '<div class="cap-tree-vline"></div>';
+              html += '<div class="cap-tree-epics">';
+              epics.forEach(function (epic) {
+                html += renderCapCard(epic, counts, "epic");
+              });
+              html += '</div>';
+            }
+            html += '</div>';
           });
+          html += '</div>';
         }
         html += '</div></div>';
       });
-      html += '</div>';
-      html += '</div>';
+      html += '</div></div>';
       document.getElementById("capabilityTree").innerHTML = html;
     }
 
