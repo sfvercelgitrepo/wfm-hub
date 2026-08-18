@@ -1130,12 +1130,33 @@ def generate_html(
     }}
 
     const SPRINT_COUNT = 9;
+    const SALESFORCE_SP_PER_SPRINT = 250;
+    const MULESOFT_SP_PER_SPRINT = 200;
 
     function getCapacityPlan() {{
       if (scopeFilter === "mulesoft") {{
-        return {{ perSprint: 200, sprintCount: SPRINT_COUNT, total: SPRINT_COUNT * 200, scopeLabel: "Mulesoft" }};
+        return {{
+          perSprint: MULESOFT_SP_PER_SPRINT,
+          sprintCount: SPRINT_COUNT,
+          total: SPRINT_COUNT * MULESOFT_SP_PER_SPRINT,
+          scopeLabel: "Mulesoft",
+        }};
       }}
-      return {{ perSprint: 250, sprintCount: SPRINT_COUNT, total: SPRINT_COUNT * 250, scopeLabel: "Salesforce" }};
+      if (scopeFilter === "salesforce") {{
+        return {{
+          perSprint: SALESFORCE_SP_PER_SPRINT,
+          sprintCount: SPRINT_COUNT,
+          total: SPRINT_COUNT * SALESFORCE_SP_PER_SPRINT,
+          scopeLabel: "Salesforce",
+        }};
+      }}
+      const perSprint = SALESFORCE_SP_PER_SPRINT + MULESOFT_SP_PER_SPRINT;
+      return {{
+        perSprint: perSprint,
+        sprintCount: SPRINT_COUNT,
+        total: SPRINT_COUNT * perSprint,
+        scopeLabel: "Salesforce + Mulesoft",
+      }};
     }}
 
     function formatSp(value) {{
