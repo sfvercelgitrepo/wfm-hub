@@ -123,6 +123,13 @@ def generate_html(
       border-top: 1px solid var(--border);
     }}
     .filter-row:first-of-type {{ border-top: none; padding-top: 0; }}
+    .filter-row-duo {{
+      display: flex; align-items: flex-start; gap: 24px; flex-wrap: wrap;
+    }}
+    .filter-group {{
+      display: flex; align-items: flex-start; gap: 12px; flex: 1 1 300px; min-width: 0;
+    }}
+    .filter-row-duo .filter-label {{ min-width: 76px; }}
     .filter-label {{
       font-size: 11px; font-weight: 700; color: var(--accent); min-width: 88px; flex-shrink: 0;
       padding-top: 6px; text-transform: uppercase; letter-spacing: 0.05em;
@@ -218,9 +225,50 @@ def generate_html(
     .cap-map-title a:hover {{ color: var(--accent); }}
     .cap-map-count {{
       display: inline-block; margin-top: 6px; font-size: 10px; font-weight: 800; color: #fff;
-      background: var(--accent); border-radius: 999px; padding: 2px 8px;
+      background: var(--accent); border-radius: 999px; padding: 2px 8px; border: none;
+      font-family: inherit; cursor: pointer;
     }}
-    .cap-map-count.zero {{ background: #3a4658; color: var(--muted); }}
+    .cap-map-count:hover {{ filter: brightness(1.12); box-shadow: 0 0 0 2px rgba(74,158,255,.35); }}
+    .cap-map-count.zero {{
+      background: #3a4658; color: var(--muted); cursor: default; box-shadow: none;
+    }}
+    .cap-map-count.zero:hover {{ filter: none; box-shadow: none; }}
+    .req-modal {{
+      position: fixed; inset: 0; z-index: 10000; display: none; align-items: center; justify-content: center;
+      padding: 20px;
+    }}
+    .req-modal.open {{ display: flex; }}
+    .req-modal-backdrop {{
+      position: absolute; inset: 0; background: rgba(8,12,18,.72); backdrop-filter: blur(2px);
+    }}
+    .req-modal-dialog {{
+      position: relative; width: min(920px, 100%); max-height: min(80vh, 720px);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      box-shadow: 0 16px 48px rgba(0,0,0,.45); display: flex; flex-direction: column; overflow: hidden;
+    }}
+    .req-modal-head {{
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+      padding: 14px 16px; border-bottom: 1px solid var(--border); background: var(--surface-2);
+    }}
+    .req-modal-eyebrow {{ font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }}
+    .req-modal-title {{ font-size: 14px; font-weight: 700; color: var(--text); margin-top: 4px; line-height: 1.35; }}
+    .req-modal-close {{
+      border: 1px solid var(--border); background: var(--surface); color: var(--muted);
+      border-radius: 8px; width: 32px; height: 32px; font-size: 20px; line-height: 1; cursor: pointer; flex-shrink: 0;
+    }}
+    .req-modal-close:hover {{ color: var(--text); border-color: var(--accent); }}
+    .req-modal-meta {{ padding: 8px 16px; font-size: 11px; color: var(--muted); border-bottom: 1px solid var(--border); }}
+    .req-modal-body {{ overflow: auto; padding: 0; }}
+    .req-modal-table {{ width: 100%; border-collapse: collapse; }}
+    .req-modal-table th {{
+      position: sticky; top: 0; background: #252f3f; padding: 8px 10px; text-align: left;
+      font-size: 10px; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border);
+    }}
+    .req-modal-table td {{ padding: 8px 10px; font-size: 11px; border-bottom: 1px solid rgba(42,53,68,.7); vertical-align: top; }}
+    .req-modal-table tr:hover {{ background: rgba(74,158,255,.06); }}
+    .req-modal-table .mono {{ font-family: Consolas, monospace; font-size: 10px; }}
+    .req-modal-table .mono a {{ color: var(--accent); text-decoration: none; }}
+    .req-modal-empty {{ padding: 24px 16px; text-align: center; color: var(--muted); font-size: 12px; }}
     .cap-map-empty {{ padding: 14px; color: var(--muted); font-size: 12px; text-align: center; }}
     .meta-line {{ font-size: 11px; color: var(--muted); margin-top: 10px; }}
     #gate {{
@@ -291,17 +339,19 @@ def generate_html(
 
     <section class="filter-panel" aria-label="Filters">
       <div class="filter-panel-title">Filters</div>
-      <div class="filter-row">
-        <div class="filter-label">Scope</div>
-        <div class="filter-chips" id="scopeQuickFilters">{scope_chips}</div>
+      <div class="filter-row filter-row-duo">
+        <div class="filter-group">
+          <div class="filter-label">Scope</div>
+          <div class="filter-chips" id="scopeQuickFilters">{scope_chips}</div>
+        </div>
+        <div class="filter-group">
+          <div class="filter-label">Fix version</div>
+          <div class="filter-chips" id="fixVersionQuickFilters">{fix_version_chips}</div>
+        </div>
       </div>
       <div class="filter-row">
         <div class="filter-label">Capability</div>
         <div class="filter-chips" id="capabilityQuickFilters">{capability_chips}</div>
-      </div>
-      <div class="filter-row">
-        <div class="filter-label">Fix version</div>
-        <div class="filter-chips" id="fixVersionQuickFilters">{fix_version_chips}</div>
       </div>
     </section>
 
@@ -319,6 +369,21 @@ def generate_html(
       </div>
       <div class="cap-map-wrap" id="capabilityTree"></div>
       <div class="meta-line" id="metaLine"></div>
+    </div>
+  </div>
+
+  <div id="reqModal" class="req-modal" aria-hidden="true">
+    <div class="req-modal-backdrop" id="reqModalBackdrop"></div>
+    <div class="req-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="reqModalTitle">
+      <div class="req-modal-head">
+        <div>
+          <div class="req-modal-eyebrow">Requirements</div>
+          <div class="req-modal-title" id="reqModalTitle"></div>
+        </div>
+        <button type="button" class="req-modal-close" id="reqModalClose" aria-label="Close">&times;</button>
+      </div>
+      <div class="req-modal-meta" id="reqModalMeta"></div>
+      <div class="req-modal-body" id="reqModalBody"></div>
     </div>
   </div>
 
@@ -370,6 +435,7 @@ def generate_html(
     let scopeFilter = "";
     let capabilityFilter = "";
     let fixVersionFilter = "";
+    let lastFilteredRows = [];
 
     function syncFilterActiveStates() {{
       document.querySelectorAll("#scopeQuickFilters .filter-chip").forEach(function (btn) {{
@@ -476,10 +542,13 @@ def generate_html(
       const typeClass = capabilityTypeClass(node.issue_type) || sizeClass || "";
       const label = '<a href="' + JIRA_BASE + '/browse/' + encodeURIComponent(node.key) + '" target="_blank" rel="noopener noreferrer" title="' + escapeHtml(node.summary || "") + '">' +
         escapeHtml(node.summary || node.key) + '</a>';
+      const countEl = count
+        ? '<button type="button" class="cap-map-count" data-node-key="' + escapeHtml(node.key) + '" data-node-title="' + escapeHtml(node.summary || node.key) + '" title="View requirements">' + count + '</button>'
+        : '<span class="cap-map-count zero">' + count + '</span>';
       return '<div class="cap-map-card ' + typeClass + '">' +
         '<div class="cap-map-type">' + escapeHtml(node.issue_type || "") + '</div>' +
         '<div class="cap-map-title">' + label + '</div>' +
-        '<div class="cap-map-count' + (count ? "" : " zero") + '">' + count + '</div>' +
+        countEl +
       '</div>';
     }}
 
@@ -570,11 +639,75 @@ def generate_html(
       document.getElementById("capabilityTree").innerHTML = html;
     }}
 
+    function issueRollsUpToNode(issue, nodeKey) {{
+      const parentOf = DATA.capabilityParent || {{}};
+      let key = issue.issue_key;
+      const seen = new Set();
+      while (key && !seen.has(key)) {{
+        seen.add(key);
+        if (key === nodeKey) return true;
+        const next = parentOf[key] || (key === issue.issue_key ? (issue.wbs_parent || "") : "");
+        if (!next || next === key) break;
+        key = next;
+      }}
+      return false;
+    }}
+
+    function requirementsForNode(nodeKey, rows) {{
+      return rows.filter(function (issue) {{ return issueRollsUpToNode(issue, nodeKey); }});
+    }}
+
+    function closeReqModal() {{
+      const modal = document.getElementById("reqModal");
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+    }}
+
+    function openReqModal(nodeKey, nodeTitle) {{
+      const rows = requirementsForNode(nodeKey, lastFilteredRows);
+      document.getElementById("reqModalTitle").textContent = nodeTitle || nodeKey;
+      document.getElementById("reqModalMeta").textContent = rows.length + " requirement" + (rows.length === 1 ? "" : "s") + " (current filters)";
+      const body = document.getElementById("reqModalBody");
+      if (!rows.length) {{
+        body.innerHTML = '<div class="req-modal-empty">No requirements roll up to this node for the current filters.</div>';
+      }} else {{
+        body.innerHTML =
+          '<table class="req-modal-table"><thead><tr>' +
+          '<th>Key</th><th>Summary</th><th>Status</th><th>Fix version</th>' +
+          '</tr></thead><tbody>' +
+          rows.map(function (issue) {{
+            const keyLink = '<a href="' + JIRA_BASE + '/browse/' + encodeURIComponent(issue.issue_key) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(issue.issue_key) + '</a>';
+            return '<tr>' +
+              '<td class="mono">' + keyLink + '</td>' +
+              '<td title="' + escapeHtml(issue.summary) + '">' + escapeHtml(issue.summary) + '</td>' +
+              '<td>' + escapeHtml(issue.status || "—") + '</td>' +
+              '<td>' + escapeHtml(issue.fix_versions || "—") + '</td>' +
+            '</tr>';
+          }}).join("") +
+          '</tbody></table>';
+      }}
+      const modal = document.getElementById("reqModal");
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden", "false");
+    }}
+
+    document.getElementById("capabilityTree").addEventListener("click", function (event) {{
+      const btn = event.target.closest(".cap-map-count[data-node-key]");
+      if (!btn) return;
+      event.preventDefault();
+      openReqModal(btn.dataset.nodeKey, btn.dataset.nodeTitle);
+    }});
+    document.getElementById("reqModalClose").addEventListener("click", closeReqModal);
+    document.getElementById("reqModalBackdrop").addEventListener("click", closeReqModal);
+    document.addEventListener("keydown", function (event) {{
+      if (event.key === "Escape") closeReqModal();
+    }});
+
     function render() {{
-      const rows = DATA.issues.filter(function (issue) {{
+      lastFilteredRows = DATA.issues.filter(function (issue) {{
         return matchesScopeFilter(issue) && matchesCapabilityFilter(issue) && matchesFixVersionFilter(issue);
       }});
-      renderExecutive(rows);
+      renderExecutive(lastFilteredRows);
     }}
 
     syncFilterActiveStates();
