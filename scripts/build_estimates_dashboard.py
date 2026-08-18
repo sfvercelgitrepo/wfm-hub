@@ -11,7 +11,7 @@ import re
 import sys
 from collections import Counter
 from datetime import datetime
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 _WFM_HUB = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 _DEFAULT_CSV = os.path.abspath(
@@ -275,7 +275,127 @@ def apply_sp_rules(issues: List[Dict[str, Any]]) -> int:
     return updated
 
 
-def generate_html(issues: List[Dict[str, Any]], field_meta: List[Dict[str, Any]], source: str) -> str:
+CAPABILITY_STRUCT_TYPES = {"Capability", "Feature", "Epic", "Decision"}
+
+
+def _split_json_objects(raw: str) -> List[str]:
+    if not raw:
+        return []
+    objects: List[str] = []
+    depth = 0
+    start: Optional[int] = None
+    for idx, char in enumerate(raw):
+        if char == "{":
+            if depth == 0:
+                start = idx
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0 and start is not None:
+                objects.append(raw[start : idx + 1])
+                start = None
+    return objects
+
+
+def build_wbs_graph(all_rows: List[Dict[str, str]]) -> Tuple[Dict[str, set], Dict[str, str]]:
+    """Build parent/child graph from Parent field and Parent-Child issue links."""
+    children: Dict[str, set] = {}
+    parent_of: Dict[str, str] = {}
+
+    def add_child(parent: str, child: str) -> None:
+        if not parent or not child or parent == child:
+            return
+        children.setdefault(parent, set()).add(child)
+        if child not in parent_of:
+            parent_of[child] = parent
+
+    for row in all_rows:
+        key = clean_text(row.get("issue_key", ""))
+        if not key:
+            continue
+        parent = clean_text(row.get("Parent", ""))
+        if parent:
+            add_child(parent, key)
+        for obj_str in _split_json_objects(row.get("Linked Issues", "")):
+            try:
+                obj = json.loads(obj_str)
+            except json.JSONDecodeError:
+                continue
+            if clean_text((obj.get("type") or {}).get("name", "")) != "Parent-Child":
+                continue
+            inward = clean_text((obj.get("inwardIssue") or {}).get("key", ""))
+            outward = clean_text((obj.get("outwardIssue") or {}).get("key", ""))
+            if inward:
+                add_child(inward, key)
+            if outward:
+                add_child(key, outward)
+
+    return children, parent_of
+
+
+def _capability_tree_node(
+    key: str,
+    by_key: Dict[str, Dict[str, str]],
+    children: Dict[str, set],
+) -> Optional[Dict[str, Any]]:
+    row = by_key.get(key)
+    if not row:
+        return None
+    issue_type = clean_text(row.get("Issue Type", ""))
+    if issue_type == "Requirement":
+        return None
+    labels = clean_text(row.get("Labels", ""))
+    cap_breakdown = "CapabilityBreakdown" in labels
+    if issue_type not in CAPABILITY_STRUCT_TYPES and not cap_breakdown:
+        return None
+
+    child_nodes: List[Dict[str, Any]] = []
+    for child_key in sorted(
+        children.get(key, set()),
+        key=lambda item: clean_text(by_key.get(item, {}).get("Summary", item)),
+    ):
+        child_node = _capability_tree_node(child_key, by_key, children)
+        if child_node:
+            child_nodes.append(child_node)
+
+    return {
+        "key": key,
+        "summary": clean_text(row.get("Summary", "")),
+        "issue_type": issue_type,
+        "cap_breakdown": cap_breakdown,
+        "children": child_nodes,
+    }
+
+
+def build_capability_tree(all_rows: List[Dict[str, str]]) -> Tuple[List[Dict[str, Any]], Dict[str, str]]:
+    by_key = {
+        clean_text(row.get("issue_key", "")): row
+        for row in all_rows
+        if clean_text(row.get("issue_key", ""))
+    }
+    children, parent_of = build_wbs_graph(all_rows)
+    roots: List[Dict[str, Any]] = []
+    for key in sorted(
+        (k for k, row in by_key.items() if clean_text(row.get("Issue Type", "")) == "Capability"),
+        key=lambda item: clean_text(by_key[item].get("Summary", item)),
+    ):
+        node = _capability_tree_node(key, by_key, children)
+        if node:
+            roots.append(node)
+    return roots, parent_of
+
+
+def enrich_wbs_parent(issues: List[Dict[str, Any]], parent_of: Dict[str, str]) -> None:
+    for issue in issues:
+        key = str(issue.get("issue_key") or "").strip()
+        issue["wbs_parent"] = parent_of.get(key) or clean_text(str(issue.get("parent") or ""))
+
+
+def generate_html(
+    issues: List[Dict[str, Any]],
+    field_meta: List[Dict[str, Any]],
+    source: str,
+) -> str:
     generated = datetime.now().strftime("%b %d, %Y %H:%M")
     bu_options = field_value_options(issues, "business_units")
     fix_version_options = field_value_options(issues, "fix_versions")
