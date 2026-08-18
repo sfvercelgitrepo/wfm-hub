@@ -32,6 +32,17 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def filter_chips_html(options: List[tuple[str, str]], active: str = "") -> str:
+    buttons: List[str] = []
+    for value, label in options:
+        active_class = " active" if value == active else ""
+        buttons.append(
+            f'<button type="button" class="filter-chip{active_class}" data-value="{html.escape(value)}">'
+            f"{html.escape(label)}</button>"
+        )
+    return "".join(buttons)
+
+
 def generate_html(
     issues: List[Dict[str, Any]],
     capability_tree: List[Dict[str, Any]],
@@ -40,11 +51,22 @@ def generate_html(
 ) -> str:
     generated = datetime.now().strftime("%b %d, %Y %H:%M")
     source_name = html.escape(os.path.basename(source))
+    fix_version_options = bed.field_value_options(issues, "fix_versions")
+    scope_chip_options = [("", "All"), ("salesforce", "Salesforce"), ("mulesoft", "Mulesoft")]
+    capability_chip_options = [("", "All")] + [
+        (str(cap.get("key") or ""), str(cap.get("summary") or cap.get("key") or ""))
+        for cap in capability_tree
+    ]
+    fix_version_chip_options = [("", "All")] + [(value, value) for value in fix_version_options]
+    scope_chips = filter_chips_html(scope_chip_options)
+    capability_chips = filter_chips_html(capability_chip_options)
+    fix_version_chips = filter_chips_html(fix_version_chip_options)
     data_json = json.dumps(
         {
             "issues": issues,
             "capabilityTree": capability_tree,
             "capabilityParent": capability_parent,
+            "fixVersionOptions": fix_version_options,
         },
         separators=(",", ":"),
     )
@@ -88,6 +110,7 @@ def generate_html(
     }}
     .nav-links a:hover {{ border-color: var(--accent); }}
     .filter-panel {{
+      position: sticky; top: 8px; z-index: 20;
       margin-top: 12px; background: var(--surface); border: 1px solid rgba(74,158,255,.45);
       border-radius: 12px; padding: 14px 16px; box-shadow: 0 4px 16px rgba(0,0,0,.22);
     }}
@@ -270,11 +293,15 @@ def generate_html(
       <div class="filter-panel-title">Filters</div>
       <div class="filter-row">
         <div class="filter-label">Scope</div>
-        <div class="filter-chips" id="scopeQuickFilters"></div>
+        <div class="filter-chips" id="scopeQuickFilters">{scope_chips}</div>
       </div>
       <div class="filter-row">
         <div class="filter-label">Capability</div>
-        <div class="filter-chips" id="capabilityQuickFilters"></div>
+        <div class="filter-chips" id="capabilityQuickFilters">{capability_chips}</div>
+      </div>
+      <div class="filter-row">
+        <div class="filter-label">Fix version</div>
+        <div class="filter-chips" id="fixVersionQuickFilters">{fix_version_chips}</div>
       </div>
     </section>
 
@@ -342,27 +369,32 @@ def generate_html(
 
     let scopeFilter = "";
     let capabilityFilter = "";
+    let fixVersionFilter = "";
 
-    function buildScopeFilters() {{
-      const el = document.getElementById("scopeQuickFilters");
-      const options = [
-        {{ value: "", label: "All" }},
-        {{ value: "salesforce", label: "Salesforce" }},
-        {{ value: "mulesoft", label: "Mulesoft" }},
-      ];
-      el.innerHTML = options.map(function (opt) {{
-        const active = scopeFilter === opt.value ? " active" : "";
-        return '<button type="button" class="filter-chip' + active + '" data-value="' + opt.value + '">' +
-          opt.label + '</button>';
-      }}).join("");
-      el.querySelectorAll(".filter-chip").forEach(function (btn) {{
-        btn.addEventListener("click", function () {{
-          scopeFilter = btn.dataset.value || "";
-          buildScopeFilters();
-          render();
-        }});
+    function syncFilterActiveStates() {{
+      document.querySelectorAll("#scopeQuickFilters .filter-chip").forEach(function (btn) {{
+        btn.classList.toggle("active", (btn.dataset.value || "") === scopeFilter);
+      }});
+      document.querySelectorAll("#capabilityQuickFilters .filter-chip").forEach(function (btn) {{
+        btn.classList.toggle("active", (btn.dataset.value || "") === capabilityFilter);
+      }});
+      document.querySelectorAll("#fixVersionQuickFilters .filter-chip").forEach(function (btn) {{
+        btn.classList.toggle("active", (btn.dataset.value || "") === fixVersionFilter);
       }});
     }}
+
+    document.querySelector(".filter-panel").addEventListener("click", function (event) {{
+      const btn = event.target.closest(".filter-chip");
+      if (!btn) return;
+      const container = btn.closest(".filter-chips");
+      if (!container) return;
+      const value = btn.dataset.value || "";
+      if (container.id === "scopeQuickFilters") scopeFilter = value;
+      else if (container.id === "capabilityQuickFilters") capabilityFilter = value;
+      else if (container.id === "fixVersionQuickFilters") fixVersionFilter = value;
+      syncFilterActiveStates();
+      render();
+    }});
 
     function matchesScopeFilter(issue) {{
       const epic = String(issue.epic_name || "").trim();
@@ -399,27 +431,10 @@ def generate_html(
       return capabilityRootForIssue(issue) === capabilityFilter;
     }}
 
-    function buildCapabilityFilters() {{
-      const el = document.getElementById("capabilityQuickFilters");
-      const roots = DATA.capabilityTree || [];
-      const options = [{{ value: "", label: "All" }}].concat(
-        roots.map(function (cap) {{
-          return {{ value: cap.key, label: cap.summary || cap.key }};
-        }})
-      );
-      el.innerHTML = options.map(function (opt) {{
-        const active = capabilityFilter === opt.value ? " active" : "";
-        const title = opt.value ? escapeHtml(opt.label) : "";
-        return '<button type="button" class="filter-chip' + active + '" data-value="' + escapeHtml(opt.value) + '"' +
-          (title ? ' title="' + title + '"' : "") + '>' + escapeHtml(opt.label) + '</button>';
-      }}).join("");
-      el.querySelectorAll(".filter-chip").forEach(function (btn) {{
-        btn.addEventListener("click", function () {{
-          capabilityFilter = btn.dataset.value || "";
-          buildCapabilityFilters();
-          render();
-        }});
-      }});
+    function matchesFixVersionFilter(issue) {{
+      if (!fixVersionFilter) return true;
+      const fixVersion = String(issue.fix_versions || "").trim() || "(Blank)";
+      return fixVersion === fixVersionFilter;
     }}
 
     const capabilityNodeKeys = new Set();
@@ -557,13 +572,12 @@ def generate_html(
 
     function render() {{
       const rows = DATA.issues.filter(function (issue) {{
-        return matchesScopeFilter(issue) && matchesCapabilityFilter(issue);
+        return matchesScopeFilter(issue) && matchesCapabilityFilter(issue) && matchesFixVersionFilter(issue);
       }});
       renderExecutive(rows);
     }}
 
-    buildScopeFilters();
-    buildCapabilityFilters();
+    syncFilterActiveStates();
     render();
   </script>
 </body>
