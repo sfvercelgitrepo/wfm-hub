@@ -59,31 +59,30 @@
       border-radius: 12px; padding: 14px 16px;
     }
     .panel-head {
-      display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;
-      margin-bottom: 8px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      margin-bottom: 12px;
     }
-    .panel-title { font-size: 14px; font-weight: 700; margin: 0; }
+    .panel-title { font-size: 14px; font-weight: 700; margin: 0; flex-shrink: 0; }
     .sprint-totals {
-      display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch;
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; flex: 1 1 auto;
     }
     .sprint-total-card {
       background: var(--surface-2); border: 1px solid rgba(74,158,255,.35); border-radius: 10px;
-      padding: 8px 14px; min-width: 140px;
+      padding: 6px 12px; min-width: 110px;
     }
     .sprint-total-card .total-label {
       display: block; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
-      color: var(--muted); margin-bottom: 4px;
+      color: var(--muted); margin-bottom: 2px;
     }
     .sprint-total-card .total-value {
-      font-size: 20px; font-weight: 800; color: #fff; line-height: 1.1;
+      font-size: 18px; font-weight: 800; color: #fff; line-height: 1.1;
     }
-    .sprint-total-card .total-sub { font-size: 10px; color: var(--muted); margin-top: 4px; }
-    .panel-sub { font-size: 11px; color: var(--muted); margin-bottom: 12px; line-height: 1.45; }
-    .status-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .sprint-total-card .total-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
     .status-chip {
-      font-size: 10px; font-weight: 700; border-radius: 999px; padding: 4px 10px; border: 1px solid var(--border);
-      background: var(--surface-2); color: var(--muted);
+      font-size: 10px; font-weight: 700; border-radius: 999px; padding: 5px 10px; border: 1px solid var(--border);
+      background: var(--surface-2); color: var(--muted); white-space: nowrap;
     }
+    .status-chip strong { color: var(--text); }
     .req-row {
       display: flex; align-items: stretch; gap: 0;
       border: 1px solid rgba(74,158,255,.45);
@@ -209,7 +208,7 @@
         <div>
           <div class="eyebrow">WFM Project</div>
           <h1>Sprint Progress</h1>
-          <div class="hero-sub">Development progress by sprint · requirements in flight and user story status · generated Sep 17, 2026 15:21</div>
+          <div class="hero-sub">Development progress by sprint · requirements in flight and user story status · generated Sep 17, 2026 21:46</div>
           <div class="nav-links">
             <a href="index.html">Project Hub</a>
             <a href="WFMEstimates.html">Estimates</a>
@@ -242,8 +241,6 @@
         <div class="panel-title" id="sprintTitle">Sprint</div>
         <div class="sprint-totals" id="sprintTotals"></div>
       </div>
-      <div class="panel-sub" id="sprintSub"></div>
-      <div class="status-legend" id="statusLegend"></div>
       <div id="sprintContent"></div>
     </div>
   </div>
@@ -442,9 +439,9 @@
       if (!container) return;
       if (!block) {
         container.innerHTML =
-          '<div class="sprint-total-card"><span class="total-label">User stories listed</span>' +
+          '<div class="sprint-total-card"><span class="total-label">User stories</span>' +
           '<span class="total-value">0</span></div>' +
-          '<div class="sprint-total-card"><span class="total-label">Story points (sum)</span>' +
+          '<div class="sprint-total-card"><span class="total-label">Story points</span>' +
           '<span class="total-value">0 SP</span></div>';
         return;
       }
@@ -452,32 +449,25 @@
       const storyCount = stories.length;
       const spSum = sumStoryPoints(stories);
       const spMissing = stories.filter(function (s) { return s.story_points == null; }).length;
-      const filteredNote = (filterStatus || filterAssignee) ? " · filtered view" : "";
+      const filteredNote = (filterStatus || filterAssignee) ? " · filtered" : "";
       const missingNote = spMissing
-        ? ('<div class="total-sub">' + spMissing + " stor" + (spMissing === 1 ? "y" : "ies") + " without SP</div>")
+        ? ('<div class="total-sub">' + spMissing + " without SP</div>")
         : "";
+      const counts = countByStatus(stories);
+      const statusChips = Object.keys(counts).sort().map(function (status) {
+        return '<span class="status-chip">' + escapeHtml(status) + ': <strong>' + counts[status] + '</strong></span>';
+      }).join("");
       container.innerHTML =
         '<div class="sprint-total-card">' +
-          '<span class="total-label">User stories listed' + escapeHtml(filteredNote) + '</span>' +
+          '<span class="total-label">User stories' + escapeHtml(filteredNote) + '</span>' +
           '<span class="total-value">' + storyCount + '</span>' +
         '</div>' +
         '<div class="sprint-total-card">' +
-          '<span class="total-label">Story points (sum)' + escapeHtml(filteredNote) + '</span>' +
+          '<span class="total-label">Story points' + escapeHtml(filteredNote) + '</span>' +
           '<span class="total-value">' + formatSp(spSum) + ' SP</span>' +
           missingNote +
-        '</div>';
-    }
-
-    function renderLegend(block) {
-      const legend = document.getElementById("statusLegend");
-      let allStories = [];
-      block.requirements.forEach(function (req) { allStories = allStories.concat(req.stories); });
-      allStories = allStories.concat(block.orphan_stories || []);
-      const counts = countByStatus(allStories);
-      const keys = Object.keys(counts).sort();
-      legend.innerHTML = keys.map(function (status) {
-        return '<span class="status-chip">' + escapeHtml(status) + ': <strong>' + counts[status] + '</strong></span>';
-      }).join("");
+        '</div>' +
+        statusChips;
     }
 
     function renderStoryChips(stories) {
@@ -539,15 +529,8 @@
       renderStoryQuickFilters(rawBlock);
       const block = rawBlock ? filterSprintBlock(rawBlock) : null;
       document.getElementById("sprintTitle").textContent = selectedSprint || "No sprint selected";
-      const filterNote = (filterStatus || filterAssignee)
-        ? " · story filters active"
-        : "";
-      document.getElementById("sprintSub").textContent = rawBlock
-        ? ("Source: created_since_2025-01-01_all_fields.csv · stories assigned via Jira Sprint field · requirements linked Parent-Child from stories" + filterNote)
-        : "No sprint data in export.";
       renderSummary(block);
       renderSprintTotals(block);
-      renderLegend(block || { requirements: [], orphan_stories: [] });
 
       const container = document.getElementById("sprintContent");
       if (!rawBlock) {
