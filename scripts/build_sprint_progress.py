@@ -263,12 +263,6 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       padding-top: 6px; text-transform: uppercase; letter-spacing: 0.05em;
     }}
     .muted-note {{ color: var(--muted); font-size: 12px; }}
-    .summary-row {{ display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }}
-    .pill {{
-      background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
-      padding: 6px 12px; font-size: 11px; color: var(--muted);
-    }}
-    .pill strong {{ color: var(--text); }}
     .panel {{
       margin-top: 12px; background: var(--surface); border: 1px solid var(--border);
       border-radius: 12px; padding: 14px 16px;
@@ -448,8 +442,6 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
         <div class="filter-chips" id="storyAssigneeFilters"></div>
       </div>
     </div>
-
-    <div class="summary-row" id="summaryRow"></div>
 
     <div class="panel">
       <div class="panel-head">
@@ -637,31 +629,21 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       return stories.concat(block.orphan_stories || []);
     }}
 
-    function renderSummary(block) {{
-      const row = document.getElementById("summaryRow");
-      if (!block) {{
-        row.innerHTML = "";
-        return;
-      }}
-      row.innerHTML =
-        '<div class="pill">Requirements: <strong>' + block.requirement_count + '</strong></div>' +
-        '<div class="pill">User stories: <strong>' + block.story_count + '</strong></div>' +
-        '<div class="pill">Orphan stories: <strong>' + block.orphan_stories.length + '</strong></div>';
-    }}
-
     function renderSprintTotals(block) {{
       const container = document.getElementById("sprintTotals");
       if (!container) return;
       if (!block) {{
         container.innerHTML =
-          '<div class="sprint-total-card"><span class="total-label">User stories</span>' +
-          '<span class="total-value">0</span></div>' +
+          '<span class="status-chip">Requirements: <strong>0</strong></span>' +
+          '<span class="status-chip">User stories: <strong>0</strong></span>' +
+          '<span class="status-chip">Orphan stories: <strong>0</strong></span>' +
           '<div class="sprint-total-card"><span class="total-label">Story points</span>' +
           '<span class="total-value">0 SP</span></div>';
         return;
       }}
       const stories = storiesFromBlock(block);
       const storyCount = stories.length;
+      const orphanCount = (block.orphan_stories || []).length;
       const spSum = sumStoryPoints(stories);
       const spMissing = stories.filter(function (s) {{ return s.story_points == null; }}).length;
       const filteredNote = (filterStatus || filterAssignee) ? " · filtered" : "";
@@ -673,10 +655,9 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
         return '<span class="status-chip">' + escapeHtml(status) + ': <strong>' + counts[status] + '</strong></span>';
       }}).join("");
       container.innerHTML =
-        '<div class="sprint-total-card">' +
-          '<span class="total-label">User stories' + escapeHtml(filteredNote) + '</span>' +
-          '<span class="total-value">' + storyCount + '</span>' +
-        '</div>' +
+        '<span class="status-chip">Requirements: <strong>' + block.requirement_count + '</strong></span>' +
+        '<span class="status-chip">User stories: <strong>' + storyCount + '</strong></span>' +
+        '<span class="status-chip">Orphan stories: <strong>' + orphanCount + '</strong></span>' +
         '<div class="sprint-total-card">' +
           '<span class="total-label">Story points' + escapeHtml(filteredNote) + '</span>' +
           '<span class="total-value">' + formatSp(spSum) + ' SP</span>' +
@@ -744,7 +725,6 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       renderStoryQuickFilters(rawBlock);
       const block = rawBlock ? filterSprintBlock(rawBlock) : null;
       document.getElementById("sprintTitle").textContent = selectedSprint || "No sprint selected";
-      renderSummary(block);
       renderSprintTotals(block);
 
       const container = document.getElementById("sprintContent");
