@@ -262,6 +262,9 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       font-size: 11px; font-weight: 700; color: var(--accent); min-width: 88px; flex-shrink: 0;
       padding-top: 6px; text-transform: uppercase; letter-spacing: 0.05em;
     }}
+    .filter-summary {{
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; margin-top: 12px;
+    }}
     .muted-note {{ color: var(--muted); font-size: 12px; }}
     .panel {{
       margin-top: 12px; background: var(--surface); border: 1px solid var(--border);
@@ -273,7 +276,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
     }}
     .panel-title {{ font-size: 14px; font-weight: 700; margin: 0; flex-shrink: 0; }}
     .sprint-totals {{
-      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; flex: 1 1 auto;
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; justify-content: flex-end; flex: 1 1 auto;
     }}
     .sprint-total-card {{
       background: var(--surface-2); border: 1px solid rgba(74,158,255,.35); border-radius: 10px;
@@ -287,11 +290,6 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       font-size: 18px; font-weight: 800; color: #fff; line-height: 1.1;
     }}
     .sprint-total-card .total-sub {{ font-size: 10px; color: var(--muted); margin-top: 2px; }}
-    .status-chip {{
-      font-size: 10px; font-weight: 700; border-radius: 999px; padding: 5px 10px; border: 1px solid var(--border);
-      background: var(--surface-2); color: var(--muted); white-space: nowrap;
-    }}
-    .status-chip strong {{ color: var(--text); }}
     .req-row {{
       display: flex; align-items: stretch; gap: 0;
       border: 1px solid rgba(74,158,255,.45);
@@ -433,6 +431,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
     <div class="filter-panel">
       <div class="filter-panel-title">Sprint</div>
       <div class="filter-chips" id="sprintChips">{chips}</div>
+      <div class="filter-summary" id="filterSummary"></div>
       <div class="filter-row">
         <div class="filter-label">Status</div>
         <div class="filter-chips" id="storyStatusFilters"></div>
@@ -629,21 +628,40 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       return stories.concat(block.orphan_stories || []);
     }}
 
+    function totalCard(label, value, subHtml) {{
+      return '<div class="sprint-total-card">' +
+        '<span class="total-label">' + escapeHtml(label) + '</span>' +
+        '<span class="total-value">' + value + '</span>' +
+        (subHtml || "") +
+      '</div>';
+    }}
+
+    function renderFilterSummary(block) {{
+      const container = document.getElementById("filterSummary");
+      if (!container) return;
+      if (!block) {{
+        container.innerHTML =
+          totalCard("Requirements", "0") +
+          totalCard("User stories", "0") +
+          totalCard("Orphan stories", "0");
+        return;
+      }}
+      const stories = storiesFromBlock(block);
+      const filteredNote = (filterStatus || filterAssignee) ? " · filtered" : "";
+      container.innerHTML =
+        totalCard("Requirements" + filteredNote, String(block.requirement_count)) +
+        totalCard("User stories" + filteredNote, String(stories.length)) +
+        totalCard("Orphan stories" + filteredNote, String((block.orphan_stories || []).length));
+    }}
+
     function renderSprintTotals(block) {{
       const container = document.getElementById("sprintTotals");
       if (!container) return;
       if (!block) {{
-        container.innerHTML =
-          '<span class="status-chip">Requirements: <strong>0</strong></span>' +
-          '<span class="status-chip">User stories: <strong>0</strong></span>' +
-          '<span class="status-chip">Orphan stories: <strong>0</strong></span>' +
-          '<div class="sprint-total-card"><span class="total-label">Story points</span>' +
-          '<span class="total-value">0 SP</span></div>';
+        container.innerHTML = totalCard("Story points", "0 SP");
         return;
       }}
       const stories = storiesFromBlock(block);
-      const storyCount = stories.length;
-      const orphanCount = (block.orphan_stories || []).length;
       const spSum = sumStoryPoints(stories);
       const spMissing = stories.filter(function (s) {{ return s.story_points == null; }}).length;
       const filteredNote = (filterStatus || filterAssignee) ? " · filtered" : "";
@@ -651,19 +669,12 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
         ? ('<div class="total-sub">' + spMissing + " without SP</div>")
         : "";
       const counts = countByStatus(stories);
-      const statusChips = Object.keys(counts).sort().map(function (status) {{
-        return '<span class="status-chip">' + escapeHtml(status) + ': <strong>' + counts[status] + '</strong></span>';
+      const statusCards = Object.keys(counts).sort().map(function (status) {{
+        return totalCard(status, String(counts[status]));
       }}).join("");
       container.innerHTML =
-        '<span class="status-chip">Requirements: <strong>' + block.requirement_count + '</strong></span>' +
-        '<span class="status-chip">User stories: <strong>' + storyCount + '</strong></span>' +
-        '<span class="status-chip">Orphan stories: <strong>' + orphanCount + '</strong></span>' +
-        '<div class="sprint-total-card">' +
-          '<span class="total-label">Story points' + escapeHtml(filteredNote) + '</span>' +
-          '<span class="total-value">' + formatSp(spSum) + ' SP</span>' +
-          missingNote +
-        '</div>' +
-        statusChips;
+        totalCard("Story points" + filteredNote, formatSp(spSum) + " SP", missingNote) +
+        statusCards;
     }}
 
     function renderStoryChips(stories) {{
@@ -725,6 +736,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       renderStoryQuickFilters(rawBlock);
       const block = rawBlock ? filterSprintBlock(rawBlock) : null;
       document.getElementById("sprintTitle").textContent = selectedSprint || "No sprint selected";
+      renderFilterSummary(block);
       renderSprintTotals(block);
 
       const container = document.getElementById("sprintContent");
