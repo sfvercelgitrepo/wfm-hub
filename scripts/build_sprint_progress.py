@@ -271,16 +271,17 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       border-radius: 12px; padding: 14px 16px;
     }}
     .panel-head {{
-      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
       margin-bottom: 12px;
     }}
-    .panel-title {{ font-size: 14px; font-weight: 700; margin: 0; flex-shrink: 0; }}
+    .panel-title {{ font-size: 14px; font-weight: 700; margin: 0; flex-shrink: 0; order: 2; }}
     .sprint-totals {{
-      display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; justify-content: flex-end; flex: 1 1 auto;
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; justify-content: center;
+      flex: 1 1 auto; order: 1;
     }}
     .sprint-total-card {{
       background: var(--surface-2); border: 1px solid rgba(74,158,255,.35); border-radius: 10px;
-      padding: 6px 12px; min-width: 110px;
+      padding: 6px 12px; min-width: 110px; text-align: center;
     }}
     .sprint-total-card .total-label {{
       display: block; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
@@ -647,18 +648,28 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
         return;
       }}
       const stories = storiesFromBlock(block);
-      const filteredNote = (filterStatus || filterAssignee) ? " · filtered" : "";
       container.innerHTML =
-        totalCard("Requirements" + filteredNote, String(block.requirement_count)) +
-        totalCard("User stories" + filteredNote, String(stories.length)) +
-        totalCard("Orphan stories" + filteredNote, String((block.orphan_stories || []).length));
+        totalCard("Requirements", String(block.requirement_count)) +
+        totalCard("User stories", String(stories.length)) +
+        totalCard("Orphan stories", String((block.orphan_stories || []).length));
+    }}
+
+    function sprintStatusKeys(rawBlock) {{
+      if (!rawBlock) return (DATA.statuses || []).slice().sort();
+      return uniqueStoryValues(storiesFromBlock(rawBlock), function (story) {{
+        return story.status || "—";
+      }});
     }}
 
     function renderSprintTotals(block) {{
       const container = document.getElementById("sprintTotals");
       if (!container) return;
+      const rawBlock = getSprintBlock();
+      const statusKeys = sprintStatusKeys(rawBlock);
       if (!block) {{
-        container.innerHTML = totalCard("Story points", "0 SP");
+        container.innerHTML =
+          totalCard("Story points", "0 SP") +
+          statusKeys.map(function (status) {{ return totalCard(status, "0"); }}).join("");
         return;
       }}
       const stories = storiesFromBlock(block);
@@ -669,8 +680,8 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
         ? ('<div class="total-sub">' + spMissing + " without SP</div>")
         : "";
       const counts = countByStatus(stories);
-      const statusCards = Object.keys(counts).sort().map(function (status) {{
-        return totalCard(status, String(counts[status]));
+      const statusCards = statusKeys.map(function (status) {{
+        return totalCard(status, String(counts[status] || 0));
       }}).join("");
       container.innerHTML =
         totalCard("Story points" + filteredNote, formatSp(spSum) + " SP", missingNote) +
@@ -736,7 +747,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       renderStoryQuickFilters(rawBlock);
       const block = rawBlock ? filterSprintBlock(rawBlock) : null;
       document.getElementById("sprintTitle").textContent = selectedSprint || "No sprint selected";
-      renderFilterSummary(block);
+      renderFilterSummary(rawBlock);
       renderSprintTotals(block);
 
       const container = document.getElementById("sprintContent");
