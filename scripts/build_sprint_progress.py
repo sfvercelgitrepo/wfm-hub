@@ -267,8 +267,26 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       display: flex; align-items: flex-start; gap: 12px; padding-top: 12px; margin-top: 12px;
       border-top: 1px solid var(--border);
     }}
+    .filter-row .filter-label {{ min-width: 88px; }}
+    .filter-group {{
+      display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;
+      margin-top: 12px; padding: 12px 14px;
+      border: 1px solid rgba(74,158,255,.4); border-radius: 10px;
+      background: rgba(15,20,25,.22);
+    }}
+    .filter-group-item {{
+      display: flex; align-items: flex-start; gap: 10px; flex: 1 1 280px; min-width: 0;
+    }}
+    .filter-group-item + .filter-group-item {{
+      border-left: 1px solid var(--border); padding-left: 16px;
+    }}
+    @media (max-width: 720px) {{
+      .filter-group-item + .filter-group-item {{
+        border-left: none; padding-left: 0; border-top: 1px solid var(--border); padding-top: 12px;
+      }}
+    }}
     .filter-label {{
-      font-size: 11px; font-weight: 700; color: var(--accent); min-width: 88px; flex-shrink: 0;
+      font-size: 11px; font-weight: 700; color: var(--accent); min-width: 52px; flex-shrink: 0;
       padding-top: 6px; text-transform: uppercase; letter-spacing: 0.05em;
     }}
     .muted-note {{ color: var(--muted); font-size: 12px; }}
@@ -441,13 +459,15 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
         <div class="filter-chips" id="sprintChips">{chips}</div>
         <div class="filter-summary" id="filterSummary"></div>
       </div>
-      <div class="filter-row">
-        <div class="filter-label">Status</div>
-        <div class="filter-chips" id="storyStatusFilters"></div>
-      </div>
-      <div class="filter-row">
-        <div class="filter-label">BU</div>
-        <div class="filter-chips" id="storyBuFilters"></div>
+      <div class="filter-group">
+        <div class="filter-group-item">
+          <div class="filter-label">Status</div>
+          <div class="filter-chips" id="storyStatusFilters"></div>
+        </div>
+        <div class="filter-group-item">
+          <div class="filter-label">BU</div>
+          <div class="filter-chips" id="storyBuFilters"></div>
+        </div>
       </div>
       <div class="filter-row">
         <div class="filter-label">Assigned to</div>
