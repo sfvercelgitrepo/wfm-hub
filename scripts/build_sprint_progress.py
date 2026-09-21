@@ -26,6 +26,7 @@ SPRINT_COL = "Sprint (customfield_10020)"
 LINKED_COL = "Linked Issues"
 SP_COL = "Story Points (customfield_10038)"
 SP_EST_COL = "Story point estimate (customfield_10016)"
+BU_COL = "Business Unit(s) (customfield_10099)"
 
 
 def row_story_points(row: Dict[str, str]) -> Optional[float]:
@@ -94,6 +95,7 @@ def story_record(row: Dict[str, str], requirement_key: Optional[str]) -> Dict[st
         "summary": bed.clean_text(row.get("Summary", ""), 500),
         "status": bed.clean_text(row.get("Status", "")),
         "assignee": bed.clean_text(row.get("Assignee", "")),
+        "business_units": bed.clean_text(row.get(BU_COL, "")),
         "story_points": points,
         "requirement_key": requirement_key or "",
         "sprints": parse_sprint_names(row.get(SPRINT_COL, "")),
@@ -108,7 +110,7 @@ def requirement_record(row: Dict[str, str]) -> Dict[str, Any]:
         "status": bed.clean_text(row.get("Status", "")),
         "epic_name": bed.clean_text(row.get("Epic Name (customfield_10011)", "")),
         "fix_versions": bed.clean_text(row.get("Fix versions", "")),
-        "business_units": bed.clean_text(row.get("Business Unit(s) (customfield_10099)", "")),
+        "business_units": bed.clean_text(row.get(BU_COL, "")),
         "assignee": bed.clean_text(row.get("Assignee", "")),
         "story_points": points,
     }
@@ -444,6 +446,10 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
         <div class="filter-chips" id="storyStatusFilters"></div>
       </div>
       <div class="filter-row">
+        <div class="filter-label">BU</div>
+        <div class="filter-chips" id="storyBuFilters"></div>
+      </div>
+      <div class="filter-row">
         <div class="filter-label">Assigned to</div>
         <div class="filter-chips" id="storyAssigneeFilters"></div>
       </div>
@@ -467,6 +473,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
 
     let selectedSprint = DEFAULT_SPRINT || (DATA.sprints[0] && DATA.sprints[0].name) || "";
     let filterStatus = "";
+    let filterBu = "";
     let filterAssignee = "";
 
     function gateSubmit() {{
@@ -560,6 +567,11 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       return value || "Unassigned";
     }}
 
+    function storyBuLabel(story) {{
+      const value = String(story.business_units || "").trim();
+      return value || "Blank";
+    }}
+
     function collectSprintStories(block) {{
       let stories = [];
       (block.requirements || []).forEach(function (req) {{
@@ -579,6 +591,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
     function storyMatchesFilters(story) {{
       const status = story.status || "—";
       if (filterStatus && status !== filterStatus) return false;
+      if (filterBu && storyBuLabel(story) !== filterBu) return false;
       if (filterAssignee && storyAssigneeLabel(story) !== filterAssignee) return false;
       return true;
     }}
@@ -615,15 +628,19 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
     function renderStoryQuickFilters(block) {{
       if (!block) {{
         document.getElementById("storyStatusFilters").innerHTML = '<span class="muted-note">—</span>';
+        document.getElementById("storyBuFilters").innerHTML = '<span class="muted-note">—</span>';
         document.getElementById("storyAssigneeFilters").innerHTML = '<span class="muted-note">—</span>';
         return;
       }}
       const stories = collectSprintStories(block);
       const statuses = uniqueStoryValues(stories, function (story) {{ return story.status || "—"; }});
+      const bus = uniqueStoryValues(stories, storyBuLabel);
       const assignees = uniqueStoryValues(stories, storyAssigneeLabel);
       if (filterStatus && statuses.indexOf(filterStatus) === -1) filterStatus = "";
+      if (filterBu && bus.indexOf(filterBu) === -1) filterBu = "";
       if (filterAssignee && assignees.indexOf(filterAssignee) === -1) filterAssignee = "";
       renderFilterChipGroup("storyStatusFilters", statuses, filterStatus, "status");
+      renderFilterChipGroup("storyBuFilters", bus, filterBu, "bu");
       renderFilterChipGroup("storyAssigneeFilters", assignees, filterAssignee, "assignee");
     }}
 
@@ -681,7 +698,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       const stories = storiesFromBlock(block);
       const spSum = sumStoryPoints(stories);
       const spMissing = stories.filter(function (s) {{ return s.story_points == null; }}).length;
-      const filteredNote = (filterStatus || filterAssignee) ? " · filtered" : "";
+      const filteredNote = (filterStatus || filterBu || filterAssignee) ? " · filtered" : "";
       const missingNote = spMissing
         ? ('<div class="total-sub">' + spMissing + " without SP</div>")
         : "";
@@ -762,7 +779,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
         return;
       }}
       if (!block || (!block.requirements.length && !block.orphan_stories.length)) {{
-        container.innerHTML = '<div class="empty-state">No stories match the selected Status / Assigned to filters.</div>';
+        container.innerHTML = '<div class="empty-state">No stories match the selected Status / BU / Assigned to filters.</div>';
         return;
       }}
 
@@ -792,6 +809,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       if (!btn) return;
       selectedSprint = btn.dataset.sprint || "";
       filterStatus = "";
+      filterBu = "";
       filterAssignee = "";
       document.querySelectorAll("#sprintChips .filter-chip").forEach(function (chip) {{
         chip.classList.toggle("active", chip === btn);
@@ -803,6 +821,13 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       const btn = event.target.closest(".filter-chip");
       if (!btn) return;
       filterStatus = btn.dataset.status || "";
+      renderSprint();
+    }});
+
+    document.getElementById("storyBuFilters").addEventListener("click", function (event) {{
+      const btn = event.target.closest(".filter-chip");
+      if (!btn) return;
+      filterBu = btn.dataset.bu || "";
       renderSprint();
     }});
 
