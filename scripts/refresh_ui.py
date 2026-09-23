@@ -32,7 +32,7 @@ def refresh_css() -> str:
       padding: 6px 12px; background: rgba(232,113,42,.92);
     }
     .refresh-btn:hover { background: #e8712a; }
-    .refresh-btn:disabled { opacity: 0.65; cursor: wait; }
+    .refresh-btn:disabled { opacity: 0.65; cursor: not-allowed; }
     .last-refreshed {
       margin-top: 10px; font-size: 11px; font-weight: 600;
       color: rgba(255,255,255,0.82); letter-spacing: 0.02em;
@@ -91,12 +91,53 @@ def refresh_js() -> str:
       }, 10000);
     }
 
+    function setRefreshButtonState(opts) {
+      var btn = document.getElementById("jiraRefreshBtn");
+      if (!btn) return;
+      var allowed = !opts || opts.allowed !== false;
+      var label = (opts && opts.label) || (allowed ? "Refresh from Jira" : "Refresh (wait 1h)");
+      btn.disabled = !allowed || Boolean(opts && opts.busy);
+      btn.textContent = label;
+      btn.title = (opts && opts.title) || (allowed
+        ? "Refresh dashboards from Jira (once per hour)"
+        : ((opts && opts.message) || "Refresh allowed once per hour"));
+    }
+
+    async function syncRefreshCooldown() {
+      try {
+        var res = await fetch("/api/refresh", { method: "GET", cache: "no-store" });
+        var data = {};
+        try { data = await res.json(); } catch (e) { data = {}; }
+        if (data && data.configured === false) {
+          setRefreshButtonState({
+            allowed: false,
+            label: "Refresh (not configured)",
+            title: data.message || "Refresh is not configured"
+          });
+          return data;
+        }
+        if (data && data.allowed === false) {
+          var mins = Math.max(1, Math.ceil((data.retryAfterMs || 0) / 60000));
+          setRefreshButtonState({
+            allowed: false,
+            label: "Refresh in " + mins + "m",
+            message: data.message || ("Refresh allowed once per hour. Try again in about " + mins + " minutes."),
+            title: data.message
+          });
+        } else {
+          setRefreshButtonState({ allowed: true });
+        }
+        return data;
+      } catch (err) {
+        setRefreshButtonState({ allowed: true });
+        return null;
+      }
+    }
+
     async function refreshFromJira() {
       var btn = document.getElementById("jiraRefreshBtn");
-      if (btn) {
-        btn.disabled = true;
-        btn.textContent = "Refreshing…";
-      }
+      if (btn && btn.disabled) return;
+      setRefreshButtonState({ allowed: true, busy: true, label: "Refreshing…" });
       try {
         var passphrase = (typeof PASSPHRASE === "string" && PASSPHRASE)
           || (typeof HUB_PASS === "string" && HUB_PASS)
@@ -108,24 +149,32 @@ def refresh_js() -> str:
         });
         var data = {};
         try { data = await res.json(); } catch (e) { data = {}; }
+        if (res.status === 429 || (data && data.ok === false && data.retryAfterMs)) {
+          showRefreshToast((data && data.error) ? data.error : "Refresh allowed once per hour.", "error");
+          await syncRefreshCooldown();
+          return;
+        }
         if (!res.ok || !data.ok) {
           showRefreshToast((data && data.error) ? data.error : ("Refresh failed (" + res.status + ")"), "error");
+          await syncRefreshCooldown();
           return;
         }
         showRefreshToast(
           (data.message || "Refresh started.") +
-          " Watch the Last refreshed timestamp after reload (1–3 min). If it does not move, the GitHub Action failed.",
+          " Watch the Last refreshed timestamp after reload (1–3 min).",
           "ok"
         );
+        setRefreshButtonState({
+          allowed: false,
+          label: "Refresh in 60m",
+          title: "Refresh allowed once per hour"
+        });
       } catch (err) {
         showRefreshToast(err && err.message ? err.message : "Refresh request failed", "error");
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.textContent = "Refresh from Jira";
-        }
+        await syncRefreshCooldown();
       }
     }
 
     initLastRefreshed();
+    syncRefreshCooldown();
 """
