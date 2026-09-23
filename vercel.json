@@ -10,6 +10,7 @@
     { "src": "WFMSprintProgress.html", "use": "@vercel/static" }
   ],
   "routes": [
+    { "src": "/api/refresh/?$", "dest": "/api/refresh.js" },
     { "src": "/api/(.*)", "dest": "/api/$1" },
     { "src": "/GDWorkshops.html", "dest": "/GDWorkshops.html" },
     { "src": "/WFMEstimates.html", "dest": "/WFMEstimates.html" },
