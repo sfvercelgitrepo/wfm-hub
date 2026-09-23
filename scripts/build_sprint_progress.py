@@ -9,7 +9,6 @@ import os
 import re
 import sys
 from collections import defaultdict
-from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -28,6 +27,7 @@ LINKED_COL = "Linked Issues"
 SP_COL = "Story Points (customfield_10038)"
 SP_EST_COL = "Story point estimate (customfield_10016)"
 BU_COL = "Business Unit(s) (customfield_10099)"
+BUILD_TYPE_COL = "Build Type (customfield_10577)"
 
 
 def row_story_points(row: Dict[str, str]) -> Optional[float]:
@@ -97,6 +97,7 @@ def story_record(row: Dict[str, str], requirement_key: Optional[str]) -> Dict[st
         "status": bed.clean_text(row.get("Status", "")),
         "assignee": bed.clean_text(row.get("Assignee", "")),
         "business_units": bed.clean_text(row.get(BU_COL, "")),
+        "build_type": bed.clean_text(row.get(BUILD_TYPE_COL, "")),
         "story_points": points,
         "requirement_key": requirement_key or "",
         "sprints": parse_sprint_names(row.get(SPRINT_COL, "")),
@@ -209,7 +210,7 @@ def sprint_chips_html(sprints: List[Dict[str, Any]]) -> str:
 
 
 def generate_html(payload: Dict[str, Any], source: str) -> str:
-    generated = datetime.now().strftime("%b %d, %Y %H:%M")
+    generated_iso = refresh_ui.generated_iso_stamp()
     source_name = html.escape(os.path.basename(source))
     sprint_blocks = payload["sprints"]
     default_sprint = sprint_blocks[0]["name"] if sprint_blocks else ""
@@ -266,7 +267,6 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       background: var(--surface); border: 1px solid rgba(74,158,255,.45);
       border-radius: 12px; padding: 14px 16px; box-shadow: 0 4px 16px rgba(0,0,0,.22);
     }}
-    .filter-panel-title {{ font-size: 12px; font-weight: 700; margin: 0 0 10px; letter-spacing: 0.04em; text-transform: uppercase; }}
     .filter-top-row {{
       display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
     }}
@@ -491,7 +491,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
             <a href="WFMRequirementsCapabilityMap.html">Capability Map</a>
             {refresh_ui.refresh_button_html()}
           </div>
-          {refresh_ui.last_refreshed_html(generated)}
+          {refresh_ui.last_refreshed_html(generated_iso)}
         </div>
         <img class="hero-charter-logo"
           src="https://corporate.charter.com/static/d617519f6e8ec1333149b2e86dd914fb/58aae/Charter_Communications_Logo_Preview_0.jpg"
@@ -500,7 +500,6 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
     </section>
 
     <div class="filter-panel">
-      <div class="filter-panel-title">Sprint</div>
       <div class="filter-top-row">
         <div class="filter-chips" id="sprintChips">{chips}</div>
         <div class="filter-summary" id="filterSummary"></div>
@@ -833,6 +832,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
         const spClass = story.story_points == null ? " missing" : "";
         const spText = story.story_points == null ? "SP TBD" : (formatSp(story.story_points) + " SP");
         const assignee = story.assignee ? escapeHtml(story.assignee) : "Unassigned";
+        const buildType = story.build_type ? escapeHtml(story.build_type) : "—";
         const blurb = escapeHtml(truncateBlurb(story.summary, 160));
         return '<a class="story-card" href="' + JIRA_BASE + '/browse/' + encodeURIComponent(story.key) + '" target="_blank" rel="noopener noreferrer">' +
           '<div class="story-card-head">' +
@@ -841,6 +841,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
           '</div>' +
           '<div class="story-blurb">' + blurb + '</div>' +
           '<div class="story-meta"><strong>Assigned to:</strong> ' + assignee + '</div>' +
+          '<div class="story-meta"><strong>Build Type:</strong> ' + buildType + '</div>' +
           '<div class="story-foot">' + statusBadge(story.status) + '</div>' +
         '</a>';
       }}).join("");

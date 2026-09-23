@@ -3,17 +3,23 @@
 from __future__ import annotations
 
 import html
+from datetime import datetime
 
 
 def refresh_button_html() -> str:
     return '<button type="button" class="refresh-btn" id="jiraRefreshBtn" onclick="refreshFromJira()">Refresh from Jira</button>'
 
 
-def last_refreshed_html(generated: str) -> str:
-    stamp = html.escape(generated)
+def generated_iso_stamp() -> str:
+    """ISO-8601 timestamp with offset; browser formats into local timezone."""
+    return datetime.now().astimezone().isoformat(timespec="minutes")
+
+
+def last_refreshed_html(generated_iso: str | None = None) -> str:
+    iso = html.escape(generated_iso or generated_iso_stamp())
     return (
-        f'<div class="last-refreshed" id="lastRefreshedAt">'
-        f"Last refreshed: {stamp}"
+        f'<div class="last-refreshed" id="lastRefreshedAt" data-refreshed-at="{iso}">'
+        f"Last refreshed: …"
         f"</div>"
     )
 
@@ -46,6 +52,29 @@ def refresh_css() -> str:
 
 def refresh_js() -> str:
     return """
+    function formatLastRefreshedStamp(iso) {
+      try {
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return iso || "—";
+        return d.toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit"
+        });
+      } catch (err) {
+        return iso || "—";
+      }
+    }
+
+    function initLastRefreshed() {
+      var el = document.getElementById("lastRefreshedAt");
+      if (!el) return;
+      var iso = el.getAttribute("data-refreshed-at") || "";
+      el.textContent = "Last refreshed: " + formatLastRefreshedStamp(iso);
+    }
+
     function showRefreshToast(message, kind) {
       var el = document.getElementById("refreshToast");
       if (!el) {
@@ -97,4 +126,6 @@ def refresh_js() -> str:
         }
       }
     }
+
+    initLastRefreshed();
 """

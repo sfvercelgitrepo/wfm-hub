@@ -50,7 +50,7 @@ def generate_html(
     capability_parent: Dict[str, str],
     source: str,
 ) -> str:
-    generated = datetime.now().strftime("%b %d, %Y %H:%M")
+    generated_iso = refresh_ui.generated_iso_stamp()
     source_name = html.escape(os.path.basename(source))
     fix_version_options = bed.field_value_options(issues, "fix_versions")
     bu_options = bed.field_value_options(issues, "business_units")
@@ -362,7 +362,7 @@ def generate_html(
           <div class="hero-scope-bar">
             <span class="scope-badge">Issue Type = Requirement</span>
           </div>
-          {refresh_ui.last_refreshed_html(generated)}
+          {refresh_ui.last_refreshed_html(generated_iso)}
         </div>
         <img class="hero-charter-logo"
           src="https://corporate.charter.com/static/d617519f6e8ec1333149b2e86dd914fb/58aae/Charter_Communications_Logo_Preview_0.jpg"

@@ -400,7 +400,7 @@ def generate_html(
     field_meta: List[Dict[str, Any]],
     source: str,
 ) -> str:
-    generated = datetime.now().strftime("%b %d, %Y %H:%M")
+    generated_iso = refresh_ui.generated_iso_stamp()
     bu_options = field_value_options(issues, "business_units")
     fix_version_options = field_value_options(issues, "fix_versions")
     data_json = json.dumps(
@@ -660,7 +660,7 @@ def generate_html(
           <div class="nav-links">
             {refresh_ui.refresh_button_html()}
           </div>
-          {refresh_ui.last_refreshed_html(generated)}
+          {refresh_ui.last_refreshed_html(generated_iso)}
           <div class="hero-scope-bar">
             <span class="scope-badge">Issue Type = Requirement</span>
             <div class="hero-scope-label">Scope</div>

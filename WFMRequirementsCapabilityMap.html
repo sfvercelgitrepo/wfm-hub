@@ -306,7 +306,7 @@
           <div class="hero-scope-bar">
             <span class="scope-badge">Issue Type = Requirement</span>
           </div>
-          <div class="last-refreshed" id="lastRefreshedAt">Last refreshed: Sep 23, 2026 22:36</div>
+          <div class="last-refreshed" id="lastRefreshedAt" data-refreshed-at="2026-09-23T17:51-05:00">Last refreshed: …</div>
         </div>
         <img class="hero-charter-logo"
           src="https://corporate.charter.com/static/d617519f6e8ec1333149b2e86dd914fb/58aae/Charter_Communications_Logo_Preview_0.jpg"
@@ -723,6 +723,29 @@
     syncFilterActiveStates();
     render();
     
+    function formatLastRefreshedStamp(iso) {
+      try {
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return iso || "—";
+        return d.toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit"
+        });
+      } catch (err) {
+        return iso || "—";
+      }
+    }
+
+    function initLastRefreshed() {
+      var el = document.getElementById("lastRefreshedAt");
+      if (!el) return;
+      var iso = el.getAttribute("data-refreshed-at") || "";
+      el.textContent = "Last refreshed: " + formatLastRefreshedStamp(iso);
+    }
+
     function showRefreshToast(message, kind) {
       var el = document.getElementById("refreshToast");
       if (!el) {
@@ -774,6 +797,8 @@
         }
       }
     }
+
+    initLastRefreshed();
 
   </script>
 </body>
