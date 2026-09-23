@@ -222,7 +222,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sprint Progress — WFM Project</title>
+  <title>WFM Sprint Progress</title>
   <style>
     :root {{
       --bg: #0f1419; --surface: #1a2332; --surface-2: #212d3d; --border: #2a3544;
@@ -465,7 +465,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
   <div id="gate">
     <div class="gate-box">
       <div class="gate-logo">Charter &times; PwC &nbsp;<span>&#9679;</span>&nbsp; WFM Global Design</div>
-      <h2>Sprint Progress</h2>
+      <h2>WFM Sprint Progress</h2>
       <p>Enter the project passphrase to open<br />this page.</p>
       <div class="gate-input-wrap">
         <input id="gate-input" type="password" placeholder="Enter passphrase" autocomplete="off"
@@ -481,8 +481,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       <div class="hero-layout">
         <div class="hero-main">
           <div class="hero-titles">
-            <div class="eyebrow">WFM Project</div>
-            <h1>Sprint Progress</h1>
+            <h1>WFM Sprint Progress</h1>
           </div>
           <div class="hero-sub">Development progress by sprint · requirements in flight and user story status</div>
           <div class="nav-links">
