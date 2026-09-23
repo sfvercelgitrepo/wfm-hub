@@ -233,19 +233,34 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
     .page {{ max-width: 1680px; margin: 0 auto; padding: 14px 16px 28px; }}
     .hero {{
       background: linear-gradient(135deg, #1f3a5f 0%, #274d78 100%);
-      color: white; border-radius: 14px; padding: 14px 16px 12px; box-shadow: var(--hero-shadow);
+      color: white; border-radius: 14px; padding: 10px 14px; box-shadow: var(--hero-shadow);
     }}
-    .hero-layout {{ display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }}
-    .eyebrow {{ font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.8; margin-bottom: 4px; }}
-    h1 {{ margin: 0; font-size: 22px; line-height: 1.2; }}
-    .hero-sub {{ margin-top: 6px; font-size: 12px; color: rgba(255,255,255,0.88); max-width: 760px; line-height: 1.45; }}
-    .hero-charter-logo {{ height: 40px; object-fit: contain; background: white; padding: 4px 8px; border-radius: 6px; flex-shrink: 0; }}
-    .nav-links {{ display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0 0; align-items: center; }}
+    .hero-layout {{
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }}
+    .hero-main {{
+      display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; flex: 1; min-width: 0;
+    }}
+    .hero-titles {{ display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }}
+    .eyebrow {{
+      font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.8; margin: 0;
+    }}
+    h1 {{ margin: 0; font-size: 18px; line-height: 1.2; }}
+    .hero-sub {{
+      margin: 0; font-size: 11px; color: rgba(255,255,255,0.88); line-height: 1.35;
+      max-width: 420px;
+    }}
+    .hero-charter-logo {{
+      height: 32px; object-fit: contain; background: white; padding: 3px 6px;
+      border-radius: 6px; flex-shrink: 0;
+    }}
+    .nav-links {{ display: flex; gap: 8px; flex-wrap: wrap; margin: 0; align-items: center; }}
     .nav-links a {{
       font-size: 11px; font-weight: 600; color: var(--accent); text-decoration: none;
-      border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px; background: var(--surface);
     }}
     {refresh_ui.refresh_css()}
+    .hero .last-refreshed {{ margin-top: 0; font-size: 10px; white-space: nowrap; }}
     .filter-panel {{
       position: sticky; top: 8px; z-index: 20; margin-top: 12px;
       background: var(--surface); border: 1px solid rgba(74,158,255,.45);
@@ -279,6 +294,13 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
     .filter-chip.active .chip-bubble.sp {{
       background: rgba(251,191,36,.35); color: #fff; border-color: rgba(251,191,36,.55);
     }}
+    #storyAssigneeFilters {{ gap: 6px; }}
+    #storyAssigneeFilters .filter-chip {{
+      font-size: 10px; font-weight: 400; padding: 4px 9px;
+    }}
+    #storyAssigneeFilters .filter-chip .chip-bubble {{
+      min-width: 16px; height: 16px; padding: 0 5px; font-size: 8px; font-weight: 600;
+    }}
     .filter-summary {{
       display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; justify-content: flex-end; flex: 1 1 auto;
     }}
@@ -308,6 +330,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       font-size: 11px; font-weight: 700; color: var(--accent); min-width: 52px; flex-shrink: 0;
       padding-top: 6px; text-transform: uppercase; letter-spacing: 0.05em;
     }}
+    .filter-row .filter-label {{ font-weight: 600; padding-top: 4px; }}
     .muted-note {{ color: var(--muted); font-size: 12px; }}
     .panel {{
       margin-top: 12px; background: var(--surface); border: 1px solid var(--border);
@@ -456,9 +479,11 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
   <div class="page">
     <section class="hero">
       <div class="hero-layout">
-        <div>
-          <div class="eyebrow">WFM Project</div>
-          <h1>Sprint Progress</h1>
+        <div class="hero-main">
+          <div class="hero-titles">
+            <div class="eyebrow">WFM Project</div>
+            <h1>Sprint Progress</h1>
+          </div>
           <div class="hero-sub">Development progress by sprint · requirements in flight and user story status</div>
           <div class="nav-links">
             <a href="index.html">Project Hub</a>
