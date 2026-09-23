@@ -39,5 +39,7 @@ jobs:
             echo "No dashboard changes to commit."
           else
             git commit -m "Refresh dashboards from Jira (automated)."
+            # Rebase onto latest main so UI commits pushed during the run do not fail the push.
+            git pull --rebase origin main
             git push origin HEAD
           fi
