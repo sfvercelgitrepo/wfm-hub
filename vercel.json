@@ -2,6 +2,7 @@
   "version": 2,
   "name": "charter-wfm-project-hub",
   "builds": [
+    { "src": "api/**/*.js", "use": "@vercel/node" },
     { "src": "index.html", "use": "@vercel/static" },
     { "src": "GDWorkshops.html", "use": "@vercel/static" },
     { "src": "WFMEstimates.html", "use": "@vercel/static" },
@@ -9,12 +10,18 @@
     { "src": "WFMSprintProgress.html", "use": "@vercel/static" }
   ],
   "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
     { "src": "/GDWorkshops.html", "dest": "/GDWorkshops.html" },
     { "src": "/WFMEstimates.html", "dest": "/WFMEstimates.html" },
     { "src": "/WFMRequirementsCapabilityMap.html", "dest": "/WFMRequirementsCapabilityMap.html" },
     { "src": "/WFMSprintProgress.html", "dest": "/WFMSprintProgress.html" },
     { "src": "/(.*)", "dest": "/index.html" }
   ],
+  "functions": {
+    "api/refresh.js": {
+      "maxDuration": 30
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",

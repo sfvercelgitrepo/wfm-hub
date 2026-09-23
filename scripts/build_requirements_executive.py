@@ -15,6 +15,7 @@ if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
 import build_estimates_dashboard as bed
+import refresh_ui
 
 _WFM_HUB = os.path.abspath(os.path.join(_SCRIPT_DIR, ".."))
 _DEFAULT_CSV = bed._DEFAULT_CSV
@@ -107,12 +108,13 @@ def generate_html(
       display: inline-block; flex-shrink: 0; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
       border-radius: 999px; padding: 4px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
     }}
-    .nav-links {{ display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0 0; }}
+    .nav-links {{ display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0 0; align-items: center; }}
     .nav-links a {{
       font-size: 11px; font-weight: 600; color: var(--accent); text-decoration: none;
       border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; background: var(--surface);
     }}
     .nav-links a:hover {{ border-color: var(--accent); }}
+    {refresh_ui.refresh_css()}
     .filter-panel {{
       position: sticky; top: 8px; z-index: 20;
       margin-top: 12px; background: var(--surface); border: 1px solid rgba(74,158,255,.45);
@@ -370,6 +372,7 @@ def generate_html(
     <div class="nav-links">
       <a href="index.html">&#8592; Project Hub</a>
       <a href="WFMEstimates.html">Estimates dashboard</a>
+      {refresh_ui.refresh_button_html()}
     </div>
 
     <section class="filter-panel" aria-label="Filters">
@@ -774,6 +777,7 @@ def generate_html(
 
     syncFilterActiveStates();
     render();
+    {refresh_ui.refresh_js()}
   </script>
 </body>
 </html>"""

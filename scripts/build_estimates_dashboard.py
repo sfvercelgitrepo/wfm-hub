@@ -13,10 +13,14 @@ from collections import Counter
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+import refresh_ui
+
 _WFM_HUB = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-_DEFAULT_CSV = os.path.abspath(
+_REPO_CSV = os.path.join(_WFM_HUB, "data", "created_since_2025-01-01_all_fields.csv")
+_MONOREPO_CSV = os.path.abspath(
     os.path.join(_WFM_HUB, "..", "jira_csv_export", "output", "created_since_2025-01-01_all_fields.csv")
 )
+_DEFAULT_CSV = _REPO_CSV if os.path.exists(_REPO_CSV) else _MONOREPO_CSV
 
 FIELDS: List[Dict[str, str]] = [
     {"key": "issue_key", "label": "Issue Key", "csv": "issue_key"},
@@ -433,6 +437,8 @@ def generate_html(
     .eyebrow {{ font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.8; margin-bottom: 4px; }}
     h1 {{ margin: 0; font-size: 22px; line-height: 1.2; }}
     .hero-sub {{ margin-top: 6px; font-size: 12px; color: rgba(255,255,255,0.88); max-width: 760px; line-height: 1.45; }}
+    .nav-links {{ display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0 0; align-items: center; }}
+    {refresh_ui.refresh_css()}
     .hero-charter-logo {{ height: 40px; object-fit: contain; background: white; padding: 4px 8px; border-radius: 6px; flex-shrink: 0; }}
     .hero-scope-bar {{
       margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -651,6 +657,9 @@ def generate_html(
           <div class="eyebrow">WFM Project</div>
           <h1>Estimates</h1>
           <div class="hero-sub">Requirement effort dashboard · story points as estimate units · {len(issues)} requirements · generated {generated}</div>
+          <div class="nav-links">
+            {refresh_ui.refresh_button_html()}
+          </div>
           <div class="hero-scope-bar">
             <span class="scope-badge">Issue Type = Requirement</span>
             <div class="hero-scope-label">Scope</div>
@@ -1382,6 +1391,7 @@ def generate_html(
       if (e.target && e.target.type === "search") render();
     }});
     render();
+    {refresh_ui.refresh_js()}
   </script>
 </body>
 </html>"""

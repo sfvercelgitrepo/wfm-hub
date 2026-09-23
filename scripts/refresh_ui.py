@@ -1,0 +1,81 @@
+"""Shared Refresh-from-Jira button markup + script for hub pages."""
+
+from __future__ import annotations
+
+
+def refresh_button_html() -> str:
+    return '<button type="button" class="refresh-btn" id="jiraRefreshBtn" onclick="refreshFromJira()">Refresh from Jira</button>'
+
+
+def refresh_css() -> str:
+    return """
+    .refresh-btn {
+      font-size: 11px; font-weight: 700; color: #fff; cursor: pointer;
+      border: 1px solid rgba(255,255,255,.35); border-radius: 999px;
+      padding: 6px 12px; background: rgba(232,113,42,.92);
+    }
+    .refresh-btn:hover { background: #e8712a; }
+    .refresh-btn:disabled { opacity: 0.65; cursor: wait; }
+    .refresh-toast {
+      position: fixed; right: 16px; bottom: 16px; z-index: 10000;
+      max-width: min(420px, calc(100vw - 32px));
+      background: #1a2332; color: #e8edf4; border: 1px solid #2a3544;
+      border-radius: 10px; padding: 12px 14px; font-size: 12px; line-height: 1.45;
+      box-shadow: 0 8px 24px rgba(0,0,0,.35); display: none;
+    }
+    .refresh-toast.show { display: block; }
+    .refresh-toast.error { border-color: rgba(248,113,113,.5); }
+    .refresh-toast.ok { border-color: rgba(52,211,153,.45); }
+"""
+
+
+def refresh_js() -> str:
+    return """
+    function showRefreshToast(message, kind) {
+      var el = document.getElementById("refreshToast");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "refreshToast";
+        el.className = "refresh-toast";
+        document.body.appendChild(el);
+      }
+      el.className = "refresh-toast show " + (kind || "");
+      el.textContent = message;
+      clearTimeout(window.__refreshToastTimer);
+      window.__refreshToastTimer = setTimeout(function () {
+        el.classList.remove("show");
+      }, 8000);
+    }
+
+    async function refreshFromJira() {
+      var btn = document.getElementById("jiraRefreshBtn");
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Refreshing…";
+      }
+      try {
+        var passphrase = (typeof PASSPHRASE === "string" && PASSPHRASE)
+          || (typeof HUB_PASS === "string" && HUB_PASS)
+          || "wfm";
+        var res = await fetch("/api/refresh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ passphrase: passphrase }),
+        });
+        var data = {};
+        try { data = await res.json(); } catch (e) { data = {}; }
+        if (!res.ok || !data.ok) {
+          showRefreshToast((data && data.error) ? data.error : ("Refresh failed (" + res.status + ")"), "error");
+          return;
+        }
+        showRefreshToast(data.message || "Refresh started. Reload in a few minutes.", "ok");
+      } catch (err) {
+        showRefreshToast(err && err.message ? err.message : "Refresh request failed", "error");
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "Refresh from Jira";
+        }
+      }
+    }
+"""

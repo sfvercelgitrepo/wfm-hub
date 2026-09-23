@@ -17,6 +17,7 @@ if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
 import build_estimates_dashboard as bed
+import refresh_ui
 
 _WFM_HUB = os.path.abspath(os.path.join(_SCRIPT_DIR, ".."))
 _DEFAULT_CSV = bed._DEFAULT_CSV
@@ -239,11 +240,12 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
     h1 {{ margin: 0; font-size: 22px; line-height: 1.2; }}
     .hero-sub {{ margin-top: 6px; font-size: 12px; color: rgba(255,255,255,0.88); max-width: 760px; line-height: 1.45; }}
     .hero-charter-logo {{ height: 40px; object-fit: contain; background: white; padding: 4px 8px; border-radius: 6px; flex-shrink: 0; }}
-    .nav-links {{ display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0 0; }}
+    .nav-links {{ display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0 0; align-items: center; }}
     .nav-links a {{
       font-size: 11px; font-weight: 600; color: var(--accent); text-decoration: none;
       border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; background: var(--surface);
     }}
+    {refresh_ui.refresh_css()}
     .filter-panel {{
       position: sticky; top: 8px; z-index: 20; margin-top: 12px;
       background: var(--surface); border: 1px solid rgba(74,158,255,.45);
@@ -462,6 +464,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
             <a href="index.html">Project Hub</a>
             <a href="WFMEstimates.html">Estimates</a>
             <a href="WFMRequirementsCapabilityMap.html">Capability Map</a>
+            {refresh_ui.refresh_button_html()}
           </div>
         </div>
         <img class="hero-charter-logo"
@@ -924,6 +927,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
     }});
 
     renderSprint();
+    {refresh_ui.refresh_js()}
   </script>
 </body>
 </html>
