@@ -358,10 +358,11 @@ def generate_html(
         <div>
           <div class="eyebrow">WFM Project</div>
           <h1>Requirements Capability Map</h1>
-          <div class="hero-sub">Capability → Feature → Epic tree · requirement counts roll up · {len(issues)} requirements · generated {generated}</div>
+          <div class="hero-sub">Capability → Feature → Epic tree · requirement counts roll up · {len(issues)} requirements</div>
           <div class="hero-scope-bar">
             <span class="scope-badge">Issue Type = Requirement</span>
           </div>
+          {refresh_ui.last_refreshed_html(generated)}
         </div>
         <img class="hero-charter-logo"
           src="https://corporate.charter.com/static/d617519f6e8ec1333149b2e86dd914fb/58aae/Charter_Communications_Logo_Preview_0.jpg"

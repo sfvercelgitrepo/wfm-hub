@@ -656,10 +656,11 @@ def generate_html(
         <div>
           <div class="eyebrow">WFM Project</div>
           <h1>Estimates</h1>
-          <div class="hero-sub">Requirement effort dashboard · story points as estimate units · {len(issues)} requirements · generated {generated}</div>
+          <div class="hero-sub">Requirement effort dashboard · story points as estimate units · {len(issues)} requirements</div>
           <div class="nav-links">
             {refresh_ui.refresh_button_html()}
           </div>
+          {refresh_ui.last_refreshed_html(generated)}
           <div class="hero-scope-bar">
             <span class="scope-badge">Issue Type = Requirement</span>
             <div class="hero-scope-label">Scope</div>

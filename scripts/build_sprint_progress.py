@@ -459,13 +459,14 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
         <div>
           <div class="eyebrow">WFM Project</div>
           <h1>Sprint Progress</h1>
-          <div class="hero-sub">Development progress by sprint · requirements in flight and user story status · generated {generated}</div>
+          <div class="hero-sub">Development progress by sprint · requirements in flight and user story status</div>
           <div class="nav-links">
             <a href="index.html">Project Hub</a>
             <a href="WFMEstimates.html">Estimates</a>
             <a href="WFMRequirementsCapabilityMap.html">Capability Map</a>
             {refresh_ui.refresh_button_html()}
           </div>
+          {refresh_ui.last_refreshed_html(generated)}
         </div>
         <img class="hero-charter-logo"
           src="https://corporate.charter.com/static/d617519f6e8ec1333149b2e86dd914fb/58aae/Charter_Communications_Logo_Preview_0.jpg"

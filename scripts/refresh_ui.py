@@ -2,9 +2,20 @@
 
 from __future__ import annotations
 
+import html
+
 
 def refresh_button_html() -> str:
     return '<button type="button" class="refresh-btn" id="jiraRefreshBtn" onclick="refreshFromJira()">Refresh from Jira</button>'
+
+
+def last_refreshed_html(generated: str) -> str:
+    stamp = html.escape(generated)
+    return (
+        f'<div class="last-refreshed" id="lastRefreshedAt">'
+        f"Last refreshed: {stamp}"
+        f"</div>"
+    )
 
 
 def refresh_css() -> str:
@@ -16,6 +27,10 @@ def refresh_css() -> str:
     }
     .refresh-btn:hover { background: #e8712a; }
     .refresh-btn:disabled { opacity: 0.65; cursor: wait; }
+    .last-refreshed {
+      margin-top: 10px; font-size: 11px; font-weight: 600;
+      color: rgba(255,255,255,0.82); letter-spacing: 0.02em;
+    }
     .refresh-toast {
       position: fixed; right: 16px; bottom: 16px; z-index: 10000;
       max-width: min(420px, calc(100vw - 32px));
@@ -44,7 +59,7 @@ def refresh_js() -> str:
       clearTimeout(window.__refreshToastTimer);
       window.__refreshToastTimer = setTimeout(function () {
         el.classList.remove("show");
-      }, 8000);
+      }, 10000);
     }
 
     async function refreshFromJira() {
@@ -68,7 +83,11 @@ def refresh_js() -> str:
           showRefreshToast((data && data.error) ? data.error : ("Refresh failed (" + res.status + ")"), "error");
           return;
         }
-        showRefreshToast(data.message || "Refresh started. Reload in a few minutes.", "ok");
+        showRefreshToast(
+          (data.message || "Refresh started.") +
+          " Watch the Last refreshed timestamp after reload (1–3 min). If it does not move, the GitHub Action failed.",
+          "ok"
+        );
       } catch (err) {
         showRefreshToast(err && err.message ? err.message : "Refresh request failed", "error");
       } finally {
