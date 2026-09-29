@@ -574,8 +574,9 @@
     let isEditMode = false;
     let visibilityMap = {};
     let editPassphrase = "";
-    let saveTimer = null;
+    let visibilityDirty = false;
     let saveSeq = 0;
+    let isSaving = false;
 
     function escapeHtml(value) {
       return String(value == null ? "" : value)
@@ -594,6 +595,10 @@
       el.textContent = text || "";
       el.classList.remove("error", "ok");
       if (kind) el.classList.add(kind);
+    }
+
+    function markVisibilityClean() {
+      visibilityDirty = false;
     }
 
     async function loadVisibilityFromServer() {
@@ -616,9 +621,11 @@
         visibilityMap = data.visibility && typeof data.visibility === "object"
           ? data.visibility
           : {};
+        markVisibilityClean();
         setSaveStatus("", "");
       } catch (err) {
         visibilityMap = {};
+        markVisibilityClean();
         setSaveStatus(err && err.message ? err.message : "Load failed", "error");
       }
     }
@@ -626,27 +633,30 @@
     async function saveVisibilityToServer() {
       if (!editPassphrase) {
         setSaveStatus("Unlock required to save", "error");
-        return;
+        return false;
       }
       const seq = ++saveSeq;
+      isSaving = true;
       setSaveStatus("Saving…");
       try {
+        const passphrase = editPassphrase;
         const res = await fetch(VIS_API, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            passphrase: editPassphrase,
+            passphrase: passphrase,
             visibility: visibilityMap
           })
         });
         const data = await res.json().catch(function () { return {}; });
-        if (seq !== saveSeq) return;
+        if (seq !== saveSeq) return false;
         if (!res.ok || !data.ok) {
           throw new Error((data && data.error) || ("Save failed (" + res.status + ")"));
         }
         if (data.visibility && typeof data.visibility === "object") {
           visibilityMap = data.visibility;
         }
+        markVisibilityClean();
         const savedLabel = data.mode === "workflow" ? "Queued" : "Saved";
         setSaveStatus(savedLabel, "ok");
         setTimeout(function () {
@@ -655,18 +665,14 @@
             setSaveStatus("");
           }
         }, 2200);
+        return true;
       } catch (err) {
-        if (seq !== saveSeq) return;
+        if (seq !== saveSeq) return false;
         setSaveStatus(err && err.message ? err.message : "Save failed", "error");
+        return false;
+      } finally {
+        if (seq === saveSeq) isSaving = false;
       }
-    }
-
-    function queueVisibilitySave() {
-      clearTimeout(saveTimer);
-      setSaveStatus("Pending save…");
-      saveTimer = setTimeout(function () {
-        saveVisibilityToServer();
-      }, 400);
     }
 
     function isFieldVisible(objectApi, fieldApi) {
@@ -679,7 +685,8 @@
 
     function setFieldVisible(objectApi, fieldApi, visible) {
       visibilityMap[fieldKey(objectApi, fieldApi)] = Boolean(visible);
-      queueVisibilitySave();
+      visibilityDirty = true;
+      setSaveStatus("Unsaved changes");
     }
 
     function todayPassword() {
@@ -698,8 +705,8 @@
       const btn = document.getElementById("lockBtn");
       const icon = document.getElementById("lockIcon");
       if (isEditMode) {
-        btn.title = "Lock page";
-        btn.setAttribute("aria-label", "Lock page");
+        btn.title = "Lock & save";
+        btn.setAttribute("aria-label", "Lock and save");
         icon.innerHTML = ICON_UNLOCK;
       } else {
         btn.title = "Unlock page";
@@ -894,15 +901,17 @@
       renderDetail();
     });
 
-    document.getElementById("lockBtn").addEventListener("click", function () {
-      if (isEditMode) {
-        // Flush any pending save before locking.
-        clearTimeout(saveTimer);
-        if (editPassphrase) saveVisibilityToServer();
-        setMode(false);
+    document.getElementById("lockBtn").addEventListener("click", async function () {
+      if (!isEditMode) {
+        openUnlockGate();
         return;
       }
-      openUnlockGate();
+      if (isSaving) return;
+      if (visibilityDirty) {
+        const ok = await saveVisibilityToServer();
+        if (!ok) return; // stay editable so changes are not lost
+      }
+      setMode(false);
     });
 
     document.getElementById("unlockCancel").addEventListener("click", closeUnlockGate);
