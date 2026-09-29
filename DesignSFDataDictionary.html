@@ -108,6 +108,25 @@
       border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; background: var(--white);
     }
     .nav-links a:hover { border-color: var(--blue); }
+    .toolbar-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toolbar-btn {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--navy);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 12px;
+      background: var(--white);
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .toolbar-btn:hover { border-color: var(--blue); color: var(--blue); }
 
     .split {
       flex: 1;
@@ -436,6 +455,9 @@
       <a href="index.html">← Project Hub</a>
       <a href="Design.html">← Design</a>
     </div>
+    <div class="toolbar-actions">
+      <button type="button" class="toolbar-btn" id="exportCsvBtn" title="Export objects and fields to CSV">Export CSV</button>
+    </div>
   </div>
 
   <div class="split">
@@ -689,6 +711,74 @@
       setSaveStatus("Unsaved changes");
     }
 
+    function csvEscape(value) {
+      const text = String(value == null ? "" : value);
+      if (/[",\r\n]/.test(text)) {
+        return '"' + text.replace(/"/g, '""') + '"';
+      }
+      return text;
+    }
+
+    function buildDictionaryCsv() {
+      const headers = [
+        "Object Label",
+        "Object API Name",
+        "Object Description",
+        "Field Label",
+        "Field API Name",
+        "Type",
+        "Required",
+        "Description",
+        "Visible"
+      ];
+      const rows = [headers.map(csvEscape).join(",")];
+      DICTIONARY.forEach(function (obj) {
+        const fields = obj.fields || [];
+        if (!fields.length) {
+          rows.push([
+            obj.label,
+            obj.apiName,
+            obj.description || "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ].map(csvEscape).join(","));
+          return;
+        }
+        fields.forEach(function (field) {
+          rows.push([
+            obj.label,
+            obj.apiName,
+            obj.description || "",
+            field.label || "",
+            field.apiName || "",
+            field.type || "",
+            field.required || "",
+            field.description || "",
+            isFieldVisible(obj.apiName, field.apiName) ? "Yes" : "No"
+          ].map(csvEscape).join(","));
+        });
+      });
+      return rows.join("\r\n") + "\r\n";
+    }
+
+    function exportDictionaryCsv() {
+      const csv = buildDictionaryCsv();
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const stamp = new Date().toISOString().slice(0, 10);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "sf-data-dictionary-" + stamp + ".csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
     function todayPassword() {
       const now = new Date();
       const mm = String(now.getMonth() + 1).padStart(2, "0");
@@ -899,6 +989,10 @@
       const next = !isFieldVisible(selectedApi, fieldApi);
       setFieldVisible(selectedApi, fieldApi, next);
       renderDetail();
+    });
+
+    document.getElementById("exportCsvBtn").addEventListener("click", function () {
+      exportDictionaryCsv();
     });
 
     document.getElementById("lockBtn").addEventListener("click", async function () {
