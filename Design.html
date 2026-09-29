@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Design — WFM Project Hub</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0D1B2E;
+      --navy-mid: #1B2E4A;
+      --blue: #1A6FBF;
+      --accent: #E8712A;
+      --bg: #F4F6FA;
+      --white: #FFFFFF;
+      --border: #D4DCE8;
+      --text: #0D1B2E;
+      --muted: #5A6E88;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      min-height: 100vh;
+    }
+    .hero {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+      color: #fff;
+      padding: 28px 32px 24px;
+    }
+    .hero-layout {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.55);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    h1 { font-size: 28px; line-height: 1.2; margin-bottom: 8px; }
+    .hero-sub { font-size: 13px; color: rgba(255,255,255,.7); max-width: 560px; line-height: 1.55; }
+    .hero-meta { margin-top: 14px; font-size: 11px; color: rgba(255,255,255,.55); }
+    .hero-meta strong { color: rgba(255,255,255,.85); font-weight: 600; }
+    .hero-charter-logo {
+      height: 40px; object-fit: contain; background: #fff;
+      padding: 4px 8px; border-radius: 6px; flex-shrink: 0;
+    }
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px 24px 40px;
+    }
+    .nav-links {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px;
+    }
+    .nav-links a {
+      font-size: 12px; font-weight: 600; color: var(--blue); text-decoration: none;
+      border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; background: var(--white);
+    }
+    .nav-links a:hover { border-color: var(--blue); }
+    .section-title {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted); margin: 0 0 12px;
+    }
+    .link-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+    .sub-link {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      background: var(--white); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px 18px; text-decoration: none; color: inherit;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .sub-link:hover {
+      border-color: var(--blue);
+      box-shadow: 0 4px 14px rgba(26,111,191,.12);
+    }
+    .sub-link-left { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+    .sub-icon {
+      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #E8F4FD; color: var(--blue); font-size: 16px;
+    }
+    .sub-text h2 { font-size: 15px; font-weight: 700; margin: 0 0 4px; }
+    .sub-text p { font-size: 12px; color: var(--muted); line-height: 1.4; margin: 0; }
+    .sub-arrow { color: var(--muted); font-size: 18px; flex-shrink: 0; }
+    .sub-link:hover .sub-arrow { color: var(--blue); }
+    .badge {
+      display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 7px;
+      border-radius: 10px; text-transform: uppercase; letter-spacing: .4px;
+      background: #E8F4FD; color: var(--blue); margin-left: 8px; vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <div class="hero-layout">
+      <div>
+        <div class="eyebrow">WFM Project Hub</div>
+        <h1>Design</h1>
+        <div class="hero-sub">Design artifacts and reference material for the WFM Global Design engagement.</div>
+        <div class="hero-meta">
+          Page owner: <strong>Thiru Valliapan / Keyur Patel</strong>
+          &nbsp;·&nbsp; Last Updated: <strong>May 21, 2026</strong>
+        </div>
+      </div>
+      <img class="hero-charter-logo"
+        src="https://corporate.charter.com/static/d617519f6e8ec1333149b2e86dd914fb/58aae/Charter_Communications_Logo_Preview_0.jpg"
+        alt="Charter" />
+    </div>
+  </section>
+
+  <div class="page">
+    <div class="nav-links">
+      <a href="index.html">← Project Hub</a>
+    </div>
+
+    <div class="section-title">Sub pages</div>
+    <div class="link-grid">
+      <a class="sub-link" href="DesignSFDataDictionary.html">
+        <div class="sub-link-left">
+          <div class="sub-icon">☰</div>
+          <div class="sub-text">
+            <h2>SF Data Dictionary <span class="badge">New</span></h2>
+            <p>Salesforce object and field reference for WFM design.</p>
+          </div>
+        </div>
+        <span class="sub-arrow">›</span>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

@@ -624,6 +624,7 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
     <a class="quick-link" href="WFMEstimates.html">&#128200; Estimates</a>
     <a class="quick-link" href="WFMRequirementsCapabilityMap.html">&#127795; Requirements Capability Map</a>
     <a class="quick-link" href="WFMSprintProgress.html">&#128640; WFM Sprint Progress</a>
+    <a class="quick-link" href="Design.html">&#9998; Design</a>
     <a class="quick-link" href="https://pwc-us-adv-cc-9cf57793.atlassian.net/" target="_blank" rel="noopener noreferrer">&#128279; Jira</a>
     <div class="hub-search-wrap">
       <input
@@ -701,6 +702,7 @@ a.doc-item:hover .doc-info .dn { color: var(--blue); }
           <a class="cat-link" href="WFMEstimates.html" style="text-decoration:none;color:inherit"><div class="link-left"><span class="link-icon">&#128200;</span><span class="link-text">Estimates</span></div><span class="link-badge badge-new">New</span><span class="arrow">&#8250;</span></a>
           <a class="cat-link" href="WFMRequirementsCapabilityMap.html" style="text-decoration:none;color:inherit"><div class="link-left"><span class="link-icon">&#127795;</span><span class="link-text">Requirements Capability Map</span></div><span class="link-badge badge-new">New</span><span class="arrow">&#8250;</span></a>
           <a class="cat-link" href="WFMSprintProgress.html" style="text-decoration:none;color:inherit"><div class="link-left"><span class="link-icon">&#128640;</span><span class="link-text">WFM Sprint Progress</span></div><span class="link-badge badge-new">New</span><span class="arrow">&#8250;</span></a>
+          <a class="cat-link" href="Design.html" style="text-decoration:none;color:inherit"><div class="link-left"><span class="link-icon">&#9998;</span><span class="link-text">Design</span></div><span class="link-badge badge-new">New</span><span class="arrow">&#8250;</span></a>
           <div class="cat-link" onclick="nav('data-model')"><div class="link-left"><span class="link-icon">&#128451;</span><span class="link-text">Data Model &amp; Master Data</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
           <div class="cat-link" onclick="nav('devops')"><div class="link-left"><span class="link-icon">&#9881;</span><span class="link-text">DevOps &amp; Environment Strategy</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
           <div class="cat-link" onclick="nav('security')"><div class="link-left"><span class="link-icon">&#128274;</span><span class="link-text">Security &amp; Access Model</span></div><span class="link-badge badge-draft">Draft</span><span class="arrow">&#8250;</span></div>
@@ -1796,6 +1798,12 @@ function buildHubSearchIndex() {
   });
   addHubSearchEntry('WFM Sprint Progress', 'Technical · WFMSprintProgress', 'External page', () => {
     window.location.href = 'WFMSprintProgress.html';
+  });
+  addHubSearchEntry('Design', 'Technical · Design', 'External page', () => {
+    window.location.href = 'Design.html';
+  });
+  addHubSearchEntry('SF Data Dictionary', 'Design · SF Data Dictionary', 'External page', () => {
+    window.location.href = 'DesignSFDataDictionary.html';
   });
 
   document.querySelectorAll('.cat-link[onclick]').forEach(el => {

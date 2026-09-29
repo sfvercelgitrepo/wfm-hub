@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SF Data Dictionary — Design</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0D1B2E;
+      --navy-mid: #1B2E4A;
+      --blue: #1A6FBF;
+      --accent: #E8712A;
+      --bg: #F4F6FA;
+      --white: #FFFFFF;
+      --border: #D4DCE8;
+      --text: #0D1B2E;
+      --muted: #5A6E88;
+      --surface-2: #EEF3FA;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    body.edit-mode .mode-badge { background: rgba(232,113,42,.2); color: #ffd2b3; }
+    .hero {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+      color: #fff;
+      padding: 18px 24px 16px;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .hero-layout {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .hero-actions {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .lock-btn {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.28);
+      background: rgba(255,255,255,.1);
+      color: #fff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .lock-btn:hover { background: rgba(255,255,255,.18); }
+    .lock-btn svg { width: 18px; height: 18px; fill: currentColor; }
+    .mode-badge {
+      align-self: center;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.12);
+      color: rgba(255,255,255,.85);
+    }
+    .save-status {
+      align-self: center;
+      font-size: 11px;
+      color: rgba(255,255,255,.75);
+      min-width: 70px;
+    }
+    .save-status.error { color: #ffb4b4; }
+    .save-status.ok { color: #b7f0cf; }
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.55);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    h1 { font-size: 22px; line-height: 1.2; margin-bottom: 6px; }
+    .hero-sub { font-size: 12px; color: rgba(255,255,255,.7); max-width: 720px; line-height: 1.45; }
+    .hero-meta { margin-top: 10px; font-size: 11px; color: rgba(255,255,255,.55); }
+    .hero-meta strong { color: rgba(255,255,255,.85); font-weight: 600; }
+    .hero-charter-logo {
+      height: 36px; object-fit: contain; background: #fff;
+      padding: 3px 7px; border-radius: 6px; flex-shrink: 0;
+    }
+    .toolbar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--white);
+      flex-shrink: 0;
+    }
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-links a {
+      font-size: 12px; font-weight: 600; color: var(--blue); text-decoration: none;
+      border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; background: var(--white);
+    }
+    .nav-links a:hover { border-color: var(--blue); }
+
+    .split {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 15% 85%;
+      background: var(--bg);
+    }
+    .pane {
+      min-height: 0;
+      overflow: auto;
+      background: var(--white);
+    }
+    .pane-left {
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+    .pane-right {
+      padding: 16px 18px 28px;
+      overflow: auto;
+    }
+    .pane-head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 12px 10px;
+    }
+    .pane-head h2 {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 8px;
+    }
+    .pane-head .count {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .search-wrap input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 12px;
+      color: var(--text);
+      background: var(--bg);
+    }
+    .search-wrap input:focus {
+      outline: none;
+      border-color: var(--blue);
+      background: var(--white);
+    }
+    .detail-toolbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .detail-toolbar .search-wrap {
+      min-width: 220px;
+      max-width: 320px;
+      flex: 1;
+    }
+    .object-list {
+      list-style: none;
+      padding: 6px;
+      margin: 0;
+    }
+    .object-item {
+      width: 100%;
+      text-align: left;
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 8px;
+      padding: 10px 10px;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .object-item:hover { background: var(--surface-2); }
+    .object-item.active {
+      background: #E8F4FD;
+      border-color: rgba(26,111,191,.35);
+    }
+    .object-item .label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    .object-item .api {
+      display: block;
+      margin-top: 3px;
+      font-size: 11px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .detail-header {
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0 0 8px;
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+      gap: 10px;
+      margin: 0 0 14px;
+    }
+    .detail-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .detail-card .k {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .detail-card .v {
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+    .detail-card .v.mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      font-weight: 600;
+      word-break: break-all;
+    }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 12px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      background: var(--surface-2);
+    }
+    tr:last-child td { border-bottom: none; }
+    col.col-visibility { width: 48px; }
+    col.col-label { width: 17%; }
+    col.col-api { width: 20%; }
+    col.col-type { width: 10%; }
+    col.col-required { width: 8%; }
+    col.col-description { width: auto; }
+    body.locked-mode col.col-visibility,
+    body.locked-mode th.col-visibility,
+    body.locked-mode td.col-visibility { display: none; }
+    td code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      background: var(--surface-2);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+    .desc-cell {
+      max-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text);
+    }
+    .eye-btn {
+      width: 30px; height: 30px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--white);
+      color: var(--muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .eye-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .eye-btn svg { width: 16px; height: 16px; fill: currentColor; }
+    .eye-btn.is-hidden-field {
+      background: #F7F0F0;
+      color: #A35A5A;
+      border-color: #E5C8C8;
+    }
+    tr.field-hidden-edit {
+      opacity: 0.55;
+      background: #FAFAFA;
+    }
+    .empty-note {
+      background: var(--surface-2);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .hidden { display: none !important; }
+
+    .gate {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(13,27,46,.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .gate.open { display: flex; }
+    .gate-card {
+      width: min(380px, 100%);
+      background: var(--white);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 18px 48px rgba(0,0,0,.28);
+      padding: 20px;
+    }
+    .gate-card h3 { font-size: 16px; margin: 0 0 6px; }
+    .gate-card p { font-size: 12px; color: var(--muted); margin: 0 0 14px; line-height: 1.45; }
+    .gate-card input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+    .gate-card input:focus { outline: none; border-color: var(--blue); }
+    .gate-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .gate-actions button {
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .gate-actions .primary {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: #fff;
+    }
+    .gate-error {
+      display: none;
+      color: #A32D2D;
+      font-size: 12px;
+      margin: 0 0 10px;
+    }
+    .gate-error.show { display: block; }
+
+    @media (max-width: 900px) {
+      .split { grid-template-columns: 1fr; }
+      .pane-left {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        max-height: 280px;
+      }
+      .detail-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body class="locked-mode">
+  <section class="hero">
+    <div class="hero-layout">
+      <div>
+        <div class="eyebrow">Design</div>
+        <h1>SF Data Dictionary</h1>
+        <div class="hero-sub">Salesforce objects and fields used in the WFM Global Design solution.</div>
+        <div class="hero-meta">
+          Page owner: <strong>Thiru Valliapan / Keyur Patel</strong>
+          &nbsp;·&nbsp; Last Updated: <strong>May 21, 2026</strong>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <span class="save-status" id="saveStatus"></span>
+        <span class="mode-badge" id="modeBadge">Locked</span>
+        <button type="button" class="lock-btn" id="lockBtn" title="Unlock page" aria-label="Unlock page">
+          <svg id="lockIcon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 4 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zm-7-2a2 2 0 1 1 4 0v2h-4V6zm7 14H7V10h10v10z"/>
+          </svg>
+        </button>
+        <img class="hero-charter-logo"
+          src="https://corporate.charter.com/static/d617519f6e8ec1333149b2e86dd914fb/58aae/Charter_Communications_Logo_Preview_0.jpg"
+          alt="Charter" />
+      </div>
+    </div>
+  </section>
+
+  <div class="toolbar">
+    <div class="nav-links">
+      <a href="index.html">← Project Hub</a>
+      <a href="Design.html">← Design</a>
+    </div>
+  </div>
+
+  <div class="split">
+    <aside class="pane pane-left" aria-label="Objects">
+      <div class="pane-head">
+        <h2>Objects</h2>
+        <div class="search-wrap">
+          <input id="objectSearch" type="search" placeholder="Filter objects…" />
+        </div>
+        <div class="count" id="objectCount">0 objects</div>
+      </div>
+      <ul class="object-list" id="objectList"></ul>
+    </aside>
+
+    <main class="pane pane-right" aria-label="Fields and details">
+      <div id="emptyState" class="empty-note">
+        Select an object on the left to view its details and fields.
+      </div>
+
+      <div id="detailView" class="hidden">
+        <div class="detail-header">
+          <h2 id="detailLabel">—</h2>
+          <div class="detail-grid">
+            <div class="detail-card">
+              <div class="k">API Name</div>
+              <div class="v mono" id="detailApi">—</div>
+            </div>
+            <div class="detail-card">
+              <div class="k">Description</div>
+              <div class="v" id="detailDescription">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-toolbar">
+          <div class="section-label" style="margin:0">Fields</div>
+          <div class="search-wrap">
+            <input id="fieldSearch" type="search" placeholder="Filter fields…" />
+          </div>
+        </div>
+        <div id="fieldsEmpty" class="empty-note hidden">No fields match the current filter.</div>
+        <table id="fieldsTable" class="hidden">
+          <colgroup>
+            <col class="col-visibility" />
+            <col class="col-label" />
+            <col class="col-api" />
+            <col class="col-type" />
+            <col class="col-required" />
+            <col class="col-description" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th class="col-visibility" aria-label="Visibility"></th>
+              <th>Field Label</th>
+              <th>API Name</th>
+              <th>Type</th>
+              <th>Required</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody id="fieldsBody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div class="gate" id="unlockGate" role="dialog" aria-modal="true" aria-labelledby="unlockTitle">
+    <div class="gate-card">
+      <h3 id="unlockTitle">Unlock page</h3>
+      <p>Enter the admin password to edit field visibility.</p>
+      <div class="gate-error" id="unlockError">Incorrect password.</div>
+      <input id="unlockInput" type="password" placeholder="Password" autocomplete="current-password" />
+      <div class="gate-actions">
+        <button type="button" id="unlockCancel">Cancel</button>
+        <button type="button" class="primary" id="unlockSubmit">Unlock</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const VIS_API = "/api/design-visibility";
+    const VIS_STATIC_FALLBACK = "/data/design-sf-visibility.json";
+    const ICON_LOCK = '<path d="M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zm-7-2a2 2 0 1 1 4 0v2h-4V6zm7 14H7V10h10v10z"/>';
+    const ICON_UNLOCK = '<path d="M17 8h-1V6a4 4 0 0 0-8 0h2a2 2 0 1 1 4 0v2H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zm0 12H7V10h10v10z"/>';
+    const ICON_EYE = '<path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/>';
+    const ICON_EYE_OFF = '<path d="M2.1 3.5 3.5 2.1l18.4 18.4-1.4 1.4-3.1-3.1A12.7 12.7 0 0 1 12 19c-7 0-10-7-10-7a18.7 18.7 0 0 1 5.2-5.6L2.1 3.5zM12 7a5 5 0 0 1 5 5c0 .6-.1 1.1-.3 1.6l-1.6-1.6A3 3 0 0 0 12 9V7zm8.9 4s-.6 1.3-1.7 2.7l-1.5-1.5A16 16 0 0 0 22 12s-3-7-10-7c-1.1 0-2.1.2-3 .5L7.4 3.9C8.8 3.3 10.3 3 12 3c7 0 10 7 10 7a18.5 18.5 0 0 1-1.1 1z"/>';
+
+    // Starter dictionary — replace / extend as design content lands.
+    const DICTIONARY = [
+      {
+        label: "Work Order",
+        apiName: "WorkOrder",
+        description: "Field service work request / job container.",
+        fields: [
+          { label: "Work Order Number", apiName: "WorkOrderNumber", type: "Auto Number", required: "Yes", description: "System generated identifier for the work order." },
+          { label: "Status", apiName: "Status", type: "Picklist", required: "Yes", description: "Lifecycle status of the work order." },
+          { label: "Priority", apiName: "Priority", type: "Picklist", required: "No", description: "Relative priority used for scheduling and dispatch decisions." },
+          { label: "Service Territory", apiName: "ServiceTerritoryId", type: "Lookup", required: "No", description: "Links the work order to a Service Territory for territory-based assignment." }
+        ]
+      },
+      {
+        label: "Service Appointment",
+        apiName: "ServiceAppointment",
+        description: "Scheduled visit / appointment against a work order.",
+        fields: [
+          { label: "Appointment Number", apiName: "AppointmentNumber", type: "Auto Number", required: "Yes", description: "System generated appointment identifier." },
+          { label: "Sched Start Time", apiName: "SchedStartTime", type: "Date/Time", required: "No", description: "Planned start of the appointment window." },
+          { label: "Sched End Time", apiName: "SchedEndTime", type: "Date/Time", required: "No", description: "Planned end of the appointment window." },
+          { label: "Status", apiName: "Status", type: "Picklist", required: "Yes", description: "Current appointment status in the scheduling lifecycle." },
+          { label: "Parent Record", apiName: "ParentRecordId", type: "Lookup", required: "Yes", description: "Parent work record, typically a Work Order." }
+        ]
+      },
+      {
+        label: "Service Territory",
+        apiName: "ServiceTerritory",
+        description: "Geographic / operating territory used for routing and assignment.",
+        fields: [
+          { label: "Name", apiName: "Name", type: "Text", required: "Yes", description: "Display name of the territory." },
+          { label: "Parent Territory", apiName: "ParentTerritoryId", type: "Lookup", required: "No", description: "Optional parent for territory hierarchy." },
+          { label: "Is Active", apiName: "IsActive", type: "Checkbox", required: "No", description: "Indicates whether the territory is available for assignment." }
+        ]
+      },
+      {
+        label: "Service Resource",
+        apiName: "ServiceResource",
+        description: "Technician or crew resource that can be scheduled.",
+        fields: [
+          { label: "Name", apiName: "Name", type: "Text", required: "Yes", description: "Display name of the service resource." },
+          { label: "Resource Type", apiName: "ResourceType", type: "Picklist", required: "Yes", description: "Classifies the resource (for example Technician or Crew)." },
+          { label: "Related Record", apiName: "RelatedRecordId", type: "Lookup", required: "No", description: "Related User or Contact record for the resource." }
+        ]
+      }
+    ];
+
+    let selectedApi = DICTIONARY[0] ? DICTIONARY[0].apiName : null;
+    let isEditMode = false;
+    let visibilityMap = {};
+    let editPassphrase = "";
+    let saveTimer = null;
+    let saveSeq = 0;
+
+    function escapeHtml(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function fieldKey(objectApi, fieldApi) {
+      return objectApi + "::" + fieldApi;
+    }
+
+    function setSaveStatus(text, kind) {
+      const el = document.getElementById("saveStatus");
+      el.textContent = text || "";
+      el.classList.remove("error", "ok");
+      if (kind) el.classList.add(kind);
+    }
+
+    async function loadVisibilityFromServer() {
+      setSaveStatus("Loading…");
+      try {
+        let res = await fetch(VIS_API, { method: "GET", cache: "no-store" });
+        let data = null;
+        if (res.ok) {
+          data = await res.json();
+        } else {
+          // Local static preview fallback when API is not running.
+          res = await fetch(VIS_STATIC_FALLBACK, { cache: "no-store" });
+          if (!res.ok) throw new Error("Could not load shared visibility");
+          data = await res.json();
+          data = { ok: true, visibility: (data && data.visibility) || {} };
+        }
+        if (!data || data.ok === false) {
+          throw new Error((data && data.error) || "Could not load shared visibility");
+        }
+        visibilityMap = data.visibility && typeof data.visibility === "object"
+          ? data.visibility
+          : {};
+        setSaveStatus("", "");
+      } catch (err) {
+        visibilityMap = {};
+        setSaveStatus(err && err.message ? err.message : "Load failed", "error");
+      }
+    }
+
+    async function saveVisibilityToServer() {
+      if (!editPassphrase) {
+        setSaveStatus("Unlock required to save", "error");
+        return;
+      }
+      const seq = ++saveSeq;
+      setSaveStatus("Saving…");
+      try {
+        const res = await fetch(VIS_API, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            passphrase: editPassphrase,
+            visibility: visibilityMap
+          })
+        });
+        const data = await res.json().catch(function () { return {}; });
+        if (seq !== saveSeq) return;
+        if (!res.ok || !data.ok) {
+          throw new Error((data && data.error) || ("Save failed (" + res.status + ")"));
+        }
+        if (data.visibility && typeof data.visibility === "object") {
+          visibilityMap = data.visibility;
+        }
+        setSaveStatus("Saved", "ok");
+        setTimeout(function () {
+          if (document.getElementById("saveStatus").textContent === "Saved") {
+            setSaveStatus("");
+          }
+        }, 1800);
+      } catch (err) {
+        if (seq !== saveSeq) return;
+        setSaveStatus(err && err.message ? err.message : "Save failed", "error");
+      }
+    }
+
+    function queueVisibilitySave() {
+      clearTimeout(saveTimer);
+      setSaveStatus("Pending save…");
+      saveTimer = setTimeout(function () {
+        saveVisibilityToServer();
+      }, 400);
+    }
+
+    function isFieldVisible(objectApi, fieldApi) {
+      const key = fieldKey(objectApi, fieldApi);
+      if (Object.prototype.hasOwnProperty.call(visibilityMap, key)) {
+        return visibilityMap[key] !== false;
+      }
+      return true;
+    }
+
+    function setFieldVisible(objectApi, fieldApi, visible) {
+      visibilityMap[fieldKey(objectApi, fieldApi)] = Boolean(visible);
+      queueVisibilitySave();
+    }
+
+    function todayPassword() {
+      const now = new Date();
+      const mm = String(now.getMonth() + 1).padStart(2, "0");
+      const dd = String(now.getDate()).padStart(2, "0");
+      const yyyy = String(now.getFullYear());
+      return "wfmadmin" + mm + dd + yyyy;
+    }
+
+    function setMode(edit) {
+      isEditMode = Boolean(edit);
+      document.body.classList.toggle("edit-mode", isEditMode);
+      document.body.classList.toggle("locked-mode", !isEditMode);
+      document.getElementById("modeBadge").textContent = isEditMode ? "Editable" : "Locked";
+      const btn = document.getElementById("lockBtn");
+      const icon = document.getElementById("lockIcon");
+      if (isEditMode) {
+        btn.title = "Lock page";
+        btn.setAttribute("aria-label", "Lock page");
+        icon.innerHTML = ICON_UNLOCK;
+      } else {
+        btn.title = "Unlock page";
+        btn.setAttribute("aria-label", "Unlock page");
+        icon.innerHTML = ICON_LOCK;
+        editPassphrase = "";
+      }
+      renderDetail();
+    }
+
+    function openUnlockGate() {
+      const gate = document.getElementById("unlockGate");
+      const input = document.getElementById("unlockInput");
+      const error = document.getElementById("unlockError");
+      error.classList.remove("show");
+      input.value = "";
+      gate.classList.add("open");
+      setTimeout(function () { input.focus(); }, 0);
+    }
+
+    function closeUnlockGate() {
+      document.getElementById("unlockGate").classList.remove("open");
+      document.getElementById("unlockError").classList.remove("show");
+      document.getElementById("unlockInput").value = "";
+    }
+
+    function filteredObjects() {
+      const q = (document.getElementById("objectSearch").value || "").trim().toLowerCase();
+      if (!q) return DICTIONARY.slice();
+      return DICTIONARY.filter(function (obj) {
+        return (
+          obj.label.toLowerCase().indexOf(q) !== -1 ||
+          obj.apiName.toLowerCase().indexOf(q) !== -1 ||
+          (obj.description || "").toLowerCase().indexOf(q) !== -1
+        );
+      });
+    }
+
+    function filteredFields(obj) {
+      let fields = (obj.fields || []).slice();
+      if (!isEditMode) {
+        fields = fields.filter(function (field) {
+          return isFieldVisible(obj.apiName, field.apiName);
+        });
+      }
+      const q = (document.getElementById("fieldSearch").value || "").trim().toLowerCase();
+      if (!q) return fields;
+      return fields.filter(function (field) {
+        return (
+          (field.label || "").toLowerCase().indexOf(q) !== -1 ||
+          (field.apiName || "").toLowerCase().indexOf(q) !== -1 ||
+          (field.type || "").toLowerCase().indexOf(q) !== -1 ||
+          (field.description || "").toLowerCase().indexOf(q) !== -1
+        );
+      });
+    }
+
+    function renderObjectList() {
+      const list = document.getElementById("objectList");
+      const objects = filteredObjects();
+      document.getElementById("objectCount").textContent =
+        objects.length + " object" + (objects.length === 1 ? "" : "s");
+
+      if (!objects.length) {
+        list.innerHTML = '<li class="empty-note" style="margin:8px">No objects match the filter.</li>';
+        return;
+      }
+
+      list.innerHTML = objects.map(function (obj) {
+        const active = obj.apiName === selectedApi ? " active" : "";
+        return (
+          "<li>" +
+            '<button type="button" class="object-item' + active + '" data-api="' + escapeHtml(obj.apiName) + '">' +
+              '<span class="label">' + escapeHtml(obj.label) + "</span>" +
+              '<span class="api">' + escapeHtml(obj.apiName) + "</span>" +
+            "</button>" +
+          "</li>"
+        );
+      }).join("");
+    }
+
+    function applyDescriptionTooltips() {
+      document.querySelectorAll("#fieldsBody .desc-cell").forEach(function (cell) {
+        const full = cell.getAttribute("data-full") || cell.textContent || "";
+        if (cell.scrollWidth > cell.clientWidth + 1) {
+          cell.title = full;
+        } else {
+          cell.removeAttribute("title");
+        }
+      });
+    }
+
+    function renderDetail() {
+      const emptyState = document.getElementById("emptyState");
+      const detailView = document.getElementById("detailView");
+      const obj = DICTIONARY.find(function (item) { return item.apiName === selectedApi; });
+
+      if (!obj) {
+        emptyState.classList.remove("hidden");
+        detailView.classList.add("hidden");
+        return;
+      }
+
+      emptyState.classList.add("hidden");
+      detailView.classList.remove("hidden");
+
+      document.getElementById("detailLabel").textContent = obj.label;
+      document.getElementById("detailApi").textContent = obj.apiName;
+      document.getElementById("detailDescription").textContent = obj.description || "—";
+
+      const fields = filteredFields(obj);
+      const fieldsEmpty = document.getElementById("fieldsEmpty");
+      const fieldsTable = document.getElementById("fieldsTable");
+      const fieldsBody = document.getElementById("fieldsBody");
+
+      if (!fields.length) {
+        fieldsEmpty.classList.remove("hidden");
+        fieldsTable.classList.add("hidden");
+        fieldsBody.innerHTML = "";
+        const total = (obj.fields || []).length;
+        const visibleTotal = (obj.fields || []).filter(function (field) {
+          return isFieldVisible(obj.apiName, field.apiName);
+        }).length;
+        if (!total) {
+          fieldsEmpty.textContent = "No fields captured for this object yet.";
+        } else if (!isEditMode && visibleTotal === 0) {
+          fieldsEmpty.textContent = "No visible fields for this object.";
+        } else {
+          fieldsEmpty.textContent = "No fields match the current filter.";
+        }
+        return;
+      }
+
+      fieldsEmpty.classList.add("hidden");
+      fieldsTable.classList.remove("hidden");
+      fieldsBody.innerHTML = fields.map(function (field) {
+        const description = field.description || "";
+        const visible = isFieldVisible(obj.apiName, field.apiName);
+        const rowClass = isEditMode && !visible ? " field-hidden-edit" : "";
+        const eyeClass = visible ? "" : " is-hidden-field";
+        const eyeTitle = visible ? "Hide field in locked mode" : "Show field in locked mode";
+        const eyeIcon = visible ? ICON_EYE : ICON_EYE_OFF;
+        return (
+          '<tr class="' + rowClass.trim() + '" data-field-api="' + escapeHtml(field.apiName) + '">' +
+            '<td class="col-visibility">' +
+              '<button type="button" class="eye-btn' + eyeClass + '" data-toggle-visibility="' + escapeHtml(field.apiName) + '" title="' + eyeTitle + '" aria-label="' + eyeTitle + '">' +
+                '<svg viewBox="0 0 24 24" aria-hidden="true">' + eyeIcon + '</svg>' +
+              "</button>" +
+            "</td>" +
+            "<td>" + escapeHtml(field.label) + "</td>" +
+            "<td><code>" + escapeHtml(field.apiName) + "</code></td>" +
+            "<td>" + escapeHtml(field.type || "—") + "</td>" +
+            "<td>" + escapeHtml(field.required || "—") + "</td>" +
+            '<td class="desc-cell" data-full="' + escapeHtml(description) + '">' + escapeHtml(description) + "</td>" +
+          "</tr>"
+        );
+      }).join("");
+
+      requestAnimationFrame(applyDescriptionTooltips);
+    }
+
+    document.getElementById("objectList").addEventListener("click", function (event) {
+      const btn = event.target.closest(".object-item");
+      if (!btn) return;
+      selectedApi = btn.getAttribute("data-api");
+      document.getElementById("fieldSearch").value = "";
+      renderObjectList();
+      renderDetail();
+    });
+
+    document.getElementById("objectSearch").addEventListener("input", function () {
+      const objects = filteredObjects();
+      if (selectedApi && !objects.some(function (obj) { return obj.apiName === selectedApi; })) {
+        selectedApi = objects[0] ? objects[0].apiName : null;
+        document.getElementById("fieldSearch").value = "";
+      }
+      renderObjectList();
+      renderDetail();
+    });
+
+    document.getElementById("fieldSearch").addEventListener("input", function () {
+      renderDetail();
+    });
+
+    document.getElementById("fieldsBody").addEventListener("click", function (event) {
+      if (!isEditMode) return;
+      const btn = event.target.closest("[data-toggle-visibility]");
+      if (!btn || !selectedApi) return;
+      const fieldApi = btn.getAttribute("data-toggle-visibility");
+      const next = !isFieldVisible(selectedApi, fieldApi);
+      setFieldVisible(selectedApi, fieldApi, next);
+      renderDetail();
+    });
+
+    document.getElementById("lockBtn").addEventListener("click", function () {
+      if (isEditMode) {
+        // Flush any pending save before locking.
+        clearTimeout(saveTimer);
+        if (editPassphrase) saveVisibilityToServer();
+        setMode(false);
+        return;
+      }
+      openUnlockGate();
+    });
+
+    document.getElementById("unlockCancel").addEventListener("click", closeUnlockGate);
+    document.getElementById("unlockGate").addEventListener("click", function (event) {
+      if (event.target.id === "unlockGate") closeUnlockGate();
+    });
+    document.getElementById("unlockSubmit").addEventListener("click", function () {
+      const value = (document.getElementById("unlockInput").value || "").trim();
+      if (value === todayPassword()) {
+        editPassphrase = value;
+        closeUnlockGate();
+        setMode(true);
+      } else {
+        document.getElementById("unlockError").classList.add("show");
+        document.getElementById("unlockInput").focus();
+      }
+    });
+    document.getElementById("unlockInput").addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        document.getElementById("unlockSubmit").click();
+      } else if (event.key === "Escape") {
+        closeUnlockGate();
+      }
+    });
+
+    window.addEventListener("resize", function () {
+      applyDescriptionTooltips();
+    });
+
+    setMode(false);
+    renderObjectList();
+    loadVisibilityFromServer().then(function () {
+      renderDetail();
+    });
+  </script>
+</body>
+</html>
