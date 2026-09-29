@@ -2,8 +2,12 @@
  * GET/PUT /api/design-visibility
  *
  * Shared field-visibility map for DesignSFDataDictionary.html.
- * Stored in-repo at data/design-sf-visibility.json via GitHub Contents API
- * so all viewers see the same locked-mode field set.
+ * Stored in-repo at data/design-sf-visibility.json so all viewers share state.
+ *
+ * Writes:
+ *   1) Prefer GitHub Contents API (instant) when the PAT has contents:write
+ *   2) On 403/401, fall back to workflow_dispatch (same PAT as refresh:
+ *      actions:write) which commits via Actions GITHUB_TOKEN
  *
  * Auth for writes:
  *   Body passphrase must equal wfmadmin + mmddyyyy (today, a few TZ-safe variants)
@@ -11,6 +15,7 @@
  * Env:
  *   GITHUB_TOKEN, GITHUB_REPO (required for read/write against GitHub)
  *   GITHUB_VISIBILITY_PATH – optional, default data/design-sf-visibility.json
+ *   GITHUB_VISIBILITY_WORKFLOW – optional, default update-design-visibility.yml
  *   GITHUB_REF – optional, default main
  */
 
@@ -130,6 +135,9 @@ function config() {
     repo: (process.env.GITHUB_REPO || "").trim(),
     path: (process.env.GITHUB_VISIBILITY_PATH || DEFAULT_PATH).trim(),
     ref: (process.env.GITHUB_REF || "main").trim(),
+    workflow: (
+      process.env.GITHUB_VISIBILITY_WORKFLOW || "update-design-visibility.yml"
+    ).trim(),
   };
 }
 
@@ -203,10 +211,52 @@ async function writeVisibilityFile(cfg, payload, sha) {
   if (!res.ok) {
     const text = await res.text();
     const err = new Error(`GitHub write failed (${res.status})`);
+    err.status = res.status;
     err.detail = text.slice(0, 500);
     throw err;
   }
-  return res.json();
+  return { mode: "contents", result: await res.json() };
+}
+
+async function dispatchVisibilityWorkflow(cfg, payload) {
+  const visibilityB64 = Buffer.from(
+    JSON.stringify(payload),
+    "utf8"
+  ).toString("base64");
+  const url =
+    `https://api.github.com/repos/${cfg.repo}/actions/workflows/` +
+    `${encodeURIComponent(cfg.workflow)}/dispatches`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      ...ghHeaders(cfg.token),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      ref: cfg.ref,
+      inputs: { visibility_b64: visibilityB64 },
+    }),
+  });
+  if (res.status !== 204 && !res.ok) {
+    const text = await res.text();
+    const err = new Error(`GitHub Action dispatch failed (${res.status})`);
+    err.status = res.status;
+    err.detail = text.slice(0, 500);
+    throw err;
+  }
+  return { mode: "workflow" };
+}
+
+async function saveVisibility(cfg, payload, sha) {
+  try {
+    return await writeVisibilityFile(cfg, payload, sha);
+  } catch (err) {
+    // Current Vercel PAT is actions:write (refresh) but often lacks contents:write.
+    if (err && (err.status === 403 || err.status === 401)) {
+      return await dispatchVisibilityWorkflow(cfg, payload);
+    }
+    throw err;
+  }
 }
 
 function readLocalVisibilityFile(relPath) {
@@ -295,12 +345,16 @@ module.exports = async function handler(req, res) {
       updatedAt: new Date().toISOString(),
       visibility: body.visibility || {},
     });
-    await writeVisibilityFile(cfg, next, current.sha);
+    const saved = await saveVisibility(cfg, next, current.sha);
     sendJson(res, 200, {
       ok: true,
       updatedAt: next.updatedAt,
       visibility: next.visibility,
-      message: "Visibility saved for all viewers.",
+      mode: saved.mode,
+      message:
+        saved.mode === "workflow"
+          ? "Visibility queued for all viewers (GitHub Action committing…)."
+          : "Visibility saved for all viewers.",
     });
   } catch (err) {
     sendJson(res, 502, {

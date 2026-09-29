@@ -647,12 +647,14 @@
         if (data.visibility && typeof data.visibility === "object") {
           visibilityMap = data.visibility;
         }
-        setSaveStatus("Saved", "ok");
+        const savedLabel = data.mode === "workflow" ? "Queued" : "Saved";
+        setSaveStatus(savedLabel, "ok");
         setTimeout(function () {
-          if (document.getElementById("saveStatus").textContent === "Saved") {
+          const cur = document.getElementById("saveStatus").textContent;
+          if (cur === "Saved" || cur === "Queued") {
             setSaveStatus("");
           }
-        }, 1800);
+        }, 2200);
       } catch (err) {
         if (seq !== saveSeq) return;
         setSaveStatus(err && err.message ? err.message : "Save failed", "error");

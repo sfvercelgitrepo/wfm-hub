@@ -1,0 +1,63 @@
+name: Update design SF visibility
+
+on:
+  workflow_dispatch:
+    inputs:
+      visibility_b64:
+        description: Base64-encoded JSON for data/design-sf-visibility.json
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: design-visibility
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Write visibility file
+        env:
+          VISIBILITY_B64: ${{ inputs.visibility_b64 }}
+        run: |
+          mkdir -p data
+          python3 - <<'PY'
+          import base64, json, os, pathlib
+          raw = base64.b64decode(os.environ["VISIBILITY_B64"])
+          payload = json.loads(raw.decode("utf-8"))
+          if not isinstance(payload, dict):
+              raise SystemExit("payload must be an object")
+          visibility = payload.get("visibility") or {}
+          if not isinstance(visibility, dict):
+              raise SystemExit("visibility must be an object")
+          clean = {
+              "updatedAt": payload.get("updatedAt"),
+              "visibility": {
+                  k: (v is not False)
+                  for k, v in visibility.items()
+                  if isinstance(k, str) and "::" in k
+              },
+          }
+          path = pathlib.Path("data/design-sf-visibility.json")
+          path.write_text(json.dumps(clean, indent=2) + "\n", encoding="utf-8")
+          print(f"Wrote {path} ({len(clean['visibility'])} keys)")
+          PY
+
+      - name: Commit and push
+        run: |
+          git config user.name "wfm-hub-visibility"
+          git config user.email "wfm-hub-visibility@users.noreply.github.com"
+          git add data/design-sf-visibility.json
+          if git diff --staged --quiet; then
+            echo "No visibility changes to commit."
+          else
+            git commit -m "Update SF Data Dictionary field visibility."
+            git push
+          fi
