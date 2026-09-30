@@ -1,6 +1,7 @@
 {
-  "updatedAt": "2026-09-29T22:46:19.799Z",
+  "updatedAt": "2026-09-30T16:30:52.268Z",
   "visibility": {
-    "WorkOrder::ServiceTerritoryId": false
+    "WorkOrder::ServiceTerritoryId": true,
+    "WorkOrder::Priority": false
   }
 }
