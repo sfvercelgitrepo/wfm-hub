@@ -34,7 +34,7 @@ jobs:
         run: |
           git config user.name "wfm-hub-refresh"
           git config user.email "wfm-hub-refresh@users.noreply.github.com"
-          git add WFMEstimates.html WFMRequirementsCapabilityMap.html WFMSprintProgress.html
+          git add WFMEstimates.html WFMRequirementsCapabilityMap.html WFMSprintProgress.html api/audit-payload.json
           if git diff --staged --quiet; then
             echo "No dashboard changes to commit."
           else

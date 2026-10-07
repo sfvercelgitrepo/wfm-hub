@@ -2,17 +2,19 @@
   "version": 2,
   "name": "charter-wfm-project-hub",
   "builds": [
-    { "src": "api/**/*.js", "use": "@vercel/node" },
+    { "src": "api/**/*.js", "use": "@vercel/node", "config": { "includeFiles": "api/audit-payload.json" } },
     { "src": "index.html", "use": "@vercel/static" },
     { "src": "GDWorkshops.html", "use": "@vercel/static" },
     { "src": "WFMEstimates.html", "use": "@vercel/static" },
     { "src": "WFMRequirementsCapabilityMap.html", "use": "@vercel/static" },
     { "src": "WFMSprintProgress.html", "use": "@vercel/static" },
+    { "src": "WFMProjectAudit.html", "use": "@vercel/static" },
     { "src": "Design.html", "use": "@vercel/static" },
     { "src": "DesignSFDataDictionary.html", "use": "@vercel/static" },
     { "src": "data/design-sf-visibility.json", "use": "@vercel/static" }
   ],
   "routes": [
+    { "src": "/api/audit/?$", "dest": "/api/audit.js" },
     { "src": "/api/refresh/?$", "dest": "/api/refresh.js" },
     { "src": "/api/design-visibility/?$", "dest": "/api/design-visibility.js" },
     { "src": "/api/(.*)", "dest": "/api/$1" },
@@ -20,6 +22,7 @@
     { "src": "/WFMEstimates.html", "dest": "/WFMEstimates.html" },
     { "src": "/WFMRequirementsCapabilityMap.html", "dest": "/WFMRequirementsCapabilityMap.html" },
     { "src": "/WFMSprintProgress.html", "dest": "/WFMSprintProgress.html" },
+    { "src": "/WFMProjectAudit.html", "dest": "/WFMProjectAudit.html" },
     { "src": "/Design.html", "dest": "/Design.html" },
     { "src": "/DesignSFDataDictionary.html", "dest": "/DesignSFDataDictionary.html" },
     { "src": "/data/design-sf-visibility.json", "dest": "/data/design-sf-visibility.json" },

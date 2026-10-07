@@ -246,6 +246,11 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.8; margin: 0;
     }}
     h1 {{ margin: 0; font-size: 18px; line-height: 1.2; }}
+    h1 a {{
+      color: #fff; text-decoration: none; cursor: pointer;
+      border-bottom: 1px dashed rgba(255,255,255,.65);
+    }}
+    h1 a:hover {{ border-bottom-style: solid; }}
     .hero-sub {{
       margin: 0; font-size: 11px; color: rgba(255,255,255,0.88); line-height: 1.35;
       max-width: 420px;
@@ -266,11 +271,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       background: var(--surface); border: 1px solid rgba(74,158,255,.45);
       border-radius: 12px; padding: 14px 16px; box-shadow: 0 4px 16px rgba(0,0,0,.22);
     }}
-    .filter-top-row {{
-      display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
-    }}
     .filter-chips {{ display: flex; flex-wrap: wrap; gap: 8px; }}
-    .filter-top-row .filter-chips {{ flex: 0 1 auto; }}
     .filter-chip {{
       border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
       border-radius: 999px; padding: 6px 14px; font-size: 11px; font-weight: 600; cursor: pointer;
@@ -293,21 +294,20 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
     .filter-chip.active .chip-bubble.sp {{
       background: rgba(251,191,36,.35); color: #fff; border-color: rgba(251,191,36,.55);
     }}
+    #storyStatusFilters,
     #storyAssigneeFilters {{ gap: 6px; }}
+    #storyStatusFilters .filter-chip {{
+      font-size: 12px; font-weight: 600; padding: 5px 10px;
+    }}
     #storyAssigneeFilters .filter-chip {{
-      font-size: 10px; font-weight: 400; padding: 4px 9px;
+      font-size: 13px; font-weight: 600; padding: 5px 11px;
+    }}
+    #storyStatusFilters .filter-chip .chip-bubble {{
+      min-width: 16px; height: 16px; padding: 0 5px; font-size: 9px; font-weight: 700;
     }}
     #storyAssigneeFilters .filter-chip .chip-bubble {{
-      min-width: 16px; height: 16px; padding: 0 5px; font-size: 8px; font-weight: 600;
+      min-width: 18px; height: 18px; padding: 0 6px; font-size: 10px; font-weight: 700;
     }}
-    .filter-summary {{
-      display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; justify-content: flex-end; flex: 1 1 auto;
-    }}
-    .filter-row {{
-      display: flex; align-items: flex-start; gap: 12px; padding-top: 12px; margin-top: 12px;
-      border-top: 1px solid var(--border);
-    }}
-    .filter-row .filter-label {{ min-width: 88px; }}
     .filter-group {{
       display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;
       margin-top: 12px; padding: 12px 14px;
@@ -315,7 +315,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       background: rgba(15,20,25,.22);
     }}
     .filter-group-item {{
-      display: flex; align-items: flex-start; gap: 10px; flex: 1 1 280px; min-width: 0;
+      display: flex; align-items: flex-start; gap: 10px; flex: 1 1 200px; min-width: 0;
     }}
     .filter-group-item + .filter-group-item {{
       border-left: 1px solid var(--border); padding-left: 16px;
@@ -329,20 +329,31 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       font-size: 11px; font-weight: 700; color: var(--accent); min-width: 52px; flex-shrink: 0;
       padding-top: 6px; text-transform: uppercase; letter-spacing: 0.05em;
     }}
-    .filter-row .filter-label {{ font-weight: 600; padding-top: 4px; }}
     .muted-note {{ color: var(--muted); font-size: 12px; }}
     .panel {{
       margin-top: 12px; background: var(--surface); border: 1px solid var(--border);
       border-radius: 12px; padding: 14px 16px;
     }}
     .panel-head {{
-      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      display: flex; flex-direction: column; align-items: stretch; gap: 12px;
       margin-bottom: 12px;
     }}
-    .panel-title {{ font-size: 14px; font-weight: 700; margin: 0; flex-shrink: 0; order: 2; }}
+    .panel-title {{ font-size: 14px; font-weight: 700; margin: 0; }}
+    .sprint-board {{
+      display: grid;
+      grid-template-columns: 25% 60% minmax(0, 1fr);
+      gap: 12px;
+    }}
+    @media (max-width: 720px) {{
+      .sprint-board {{ grid-template-columns: 1fr; }}
+    }}
+    .sprint-tile {{
+      border: 1px solid rgba(74,158,255,.4); border-radius: 10px;
+      background: rgba(15,20,25,.22); padding: 10px 12px; min-width: 0;
+    }}
+    .sprint-tile .filter-label {{ padding-top: 0; margin-bottom: 8px; }}
     .sprint-totals {{
-      display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; justify-content: center;
-      flex: 1 1 auto; order: 1;
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; justify-content: flex-start;
     }}
     .sprint-total-card {{
       background: var(--surface-2); border: 1px solid rgba(74,158,255,.35); border-radius: 10px;
@@ -480,7 +491,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       <div class="hero-layout">
         <div class="hero-main">
           <div class="hero-titles">
-            <h1>WFM Sprint Progress</h1>
+            <h1><a href="WFMProjectAudit.html" target="_blank" rel="noopener noreferrer">WFM Sprint Progress</a></h1>
           </div>
           <div class="hero-sub">Development progress by sprint · requirements in flight and user story status</div>
           <div class="nav-links">
@@ -498,30 +509,40 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
     </section>
 
     <div class="filter-panel">
-      <div class="filter-top-row">
-        <div class="filter-chips" id="sprintChips">{chips}</div>
-        <div class="filter-summary" id="filterSummary"></div>
-      </div>
+      <div class="filter-chips" id="sprintChips">{chips}</div>
       <div class="filter-group">
         <div class="filter-group-item">
           <div class="filter-label">Status</div>
-          <div class="filter-chips" id="storyStatusFilters"></div>
+          <div class="filter-chips" id="reqStatusFilters"></div>
         </div>
         <div class="filter-group-item">
           <div class="filter-label">BU</div>
-          <div class="filter-chips" id="storyBuFilters"></div>
+          <div class="filter-chips" id="reqBuFilters"></div>
         </div>
-      </div>
-      <div class="filter-row">
-        <div class="filter-label">Assigned to</div>
-        <div class="filter-chips" id="storyAssigneeFilters"></div>
+        <div class="filter-group-item">
+          <div class="filter-label">Fix Version</div>
+          <div class="filter-chips" id="reqFixFilters"></div>
+        </div>
       </div>
     </div>
 
     <div class="panel">
       <div class="panel-head">
         <div class="panel-title" id="sprintTitle">Sprint</div>
-        <div class="sprint-totals" id="sprintTotals"></div>
+        <div class="sprint-board">
+          <section class="sprint-tile">
+            <div class="filter-label">Story status</div>
+            <div class="filter-chips" id="storyStatusFilters"></div>
+          </section>
+          <section class="sprint-tile">
+            <div class="filter-label">Assigned to</div>
+            <div class="filter-chips" id="storyAssigneeFilters"></div>
+          </section>
+          <section class="sprint-tile sprint-tile-totals">
+            <div class="filter-label">Sprint totals</div>
+            <div class="sprint-totals" id="sprintTotals"></div>
+          </section>
+        </div>
       </div>
       <div id="sprintContent"></div>
     </div>
@@ -535,8 +556,10 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
     const PASSPHRASE = "wfm";
 
     let selectedSprint = DEFAULT_SPRINT || (DATA.sprints[0] && DATA.sprints[0].name) || "";
-    let filterStatus = "";
-    let filterBu = "";
+    let filterReqStatus = "";
+    let filterReqBu = "";
+    let filterReqFix = "";
+    let filterStoryStatus = "";
     let filterAssignee = "";
 
     function gateSubmit() {{
@@ -630,9 +653,30 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       return value || "Unassigned";
     }}
 
-    function storyBuLabel(story) {{
-      const value = String(story.business_units || "").trim();
+    function reqStatusLabel(req) {{
+      const value = String(req.status || "").trim();
+      return value || "—";
+    }}
+
+    function reqBuLabel(req) {{
+      const value = String(req.business_units || "").trim();
       return value || "Blank";
+    }}
+
+    function reqFixLabel(req) {{
+      const value = String(req.fix_versions || "").trim();
+      return value || "Blank";
+    }}
+
+    function requirementFilterActive() {{
+      return !!(filterReqStatus || filterReqBu || filterReqFix);
+    }}
+
+    function requirementMatchesFilters(req) {{
+      if (filterReqStatus && reqStatusLabel(req) !== filterReqStatus) return false;
+      if (filterReqBu && reqBuLabel(req) !== filterReqBu) return false;
+      if (filterReqFix && reqFixLabel(req) !== filterReqFix) return false;
+      return true;
     }}
 
     function collectSprintStories(block) {{
@@ -651,21 +695,35 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       return Object.keys(seen).sort(function (a, b) {{ return a.localeCompare(b); }});
     }}
 
-    function storyMatchesFilters(story) {{
-      const status = story.status || "—";
-      if (filterStatus && status !== filterStatus) return false;
-      if (filterBu && storyBuLabel(story) !== filterBu) return false;
+    function storyStatusLabel(story) {{
+      return story.status || "—";
+    }}
+
+    function storyMatchesStoryFilters(story) {{
+      if (filterStoryStatus && storyStatusLabel(story) !== filterStoryStatus) return false;
       if (filterAssignee && storyAssigneeLabel(story) !== filterAssignee) return false;
       return true;
     }}
 
+    function storiesInRequirementScope(rawBlock) {{
+      let stories = [];
+      (rawBlock.requirements || []).forEach(function (req) {{
+        if (!requirementMatchesFilters(req)) return;
+        stories = stories.concat(req.stories || []);
+      }});
+      if (!requirementFilterActive()) stories = stories.concat(rawBlock.orphan_stories || []);
+      return stories;
+    }}
+
     function filterSprintBlock(block) {{
-      const requirements = (block.requirements || []).map(function (req) {{
+      const requirements = (block.requirements || []).filter(requirementMatchesFilters).map(function (req) {{
         return Object.assign({{}}, req, {{
-          stories: (req.stories || []).filter(storyMatchesFilters),
+          stories: (req.stories || []).filter(storyMatchesStoryFilters),
         }});
       }}).filter(function (req) {{ return req.stories.length > 0; }});
-      const orphanStories = (block.orphan_stories || []).filter(storyMatchesFilters);
+      const orphanStories = requirementFilterActive()
+        ? []
+        : (block.orphan_stories || []).filter(storyMatchesStoryFilters);
       const storyCount = requirements.reduce(function (acc, req) {{
         return acc + req.stories.length;
       }}, 0) + orphanStories.length;
@@ -700,6 +758,47 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       return stats;
     }}
 
+    function assigneeFirstName(name) {{
+      const value = String(name || "").trim();
+      if (!value || value === "Unassigned") return value || "Unassigned";
+      return value.split(/\\s+/)[0];
+    }}
+
+    function bubbleChip(label, dataAttr, dataValue, active, count, sp, title) {{
+      const titleAttr = title ? ' title="' + escapeHtml(title) + '"' : "";
+      return '<button type="button" class="filter-chip' + (active ? " active" : "") + '" data-' + dataAttr + '="' + escapeHtml(dataValue) + '"' + titleAttr + '>' +
+        escapeHtml(label) +
+        '<span class="chip-bubbles">' +
+          '<span class="chip-bubble" title="User stories">' + count + '</span>' +
+          '<span class="chip-bubble sp" title="Story points">' + formatSp(sp) + ' SP</span>' +
+        '</span></button>';
+    }}
+
+    function renderStoryStatusFilters(rawBlock) {{
+      const container = document.getElementById("storyStatusFilters");
+      if (!container) return;
+      if (!rawBlock) {{
+        container.innerHTML = '<span class="muted-note">—</span>';
+        return;
+      }}
+      // Counts ignore the status chip so every status stays visible inside the other story filters.
+      const savedStatus = filterStoryStatus;
+      filterStoryStatus = "";
+      const scopedStories = storiesInRequirementScope(rawBlock).filter(storyMatchesStoryFilters);
+      filterStoryStatus = savedStatus;
+
+      const statuses = uniqueStoryValues(collectSprintStories(rawBlock), storyStatusLabel);
+      if (filterStoryStatus && statuses.indexOf(filterStoryStatus) === -1) filterStoryStatus = "";
+
+      const counts = countByStatus(scopedStories);
+      let html = bubbleChip("All", "story-status", "", filterStoryStatus === "", scopedStories.length, sumStoryPoints(scopedStories));
+      statuses.forEach(function (status) {{
+        const matching = scopedStories.filter(function (story) {{ return storyStatusLabel(story) === status; }});
+        html += bubbleChip(status, "story-status", status, filterStoryStatus === status, counts[status] || 0, sumStoryPoints(matching));
+      }});
+      container.innerHTML = html;
+    }}
+
     function renderAssigneeFilters(rawBlock) {{
       const container = document.getElementById("storyAssigneeFilters");
       if (!container) return;
@@ -707,10 +806,10 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
         container.innerHTML = '<span class="muted-note">—</span>';
         return;
       }}
-      // Stats ignore assignee filter so each person bubble stays visible in context of Status/BU.
+      // Counts ignore the assignee chip so every person stays visible inside the active requirement and story-status filters.
       const savedAssignee = filterAssignee;
       filterAssignee = "";
-      const scopedStories = storiesFromBlock(filterSprintBlock(rawBlock));
+      const scopedStories = storiesInRequirementScope(rawBlock).filter(storyMatchesStoryFilters);
       filterAssignee = savedAssignee;
 
       const allSprintStories = collectSprintStories(rawBlock);
@@ -721,37 +820,43 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       const allCount = scopedStories.length;
       const allSp = sumStoryPoints(scopedStories);
 
-      let html = '<button type="button" class="filter-chip' + (filterAssignee === "" ? " active" : "") + '" data-assignee="">' +
-        'All<span class="chip-bubbles"><span class="chip-bubble" title="User stories">' + allCount + '</span>' +
-        '<span class="chip-bubble sp" title="Story points">' + formatSp(allSp) + ' SP</span></span></button>';
+      let html = bubbleChip("All", "assignee", "", filterAssignee === "", allCount, allSp);
 
       assignees.forEach(function (name) {{
         const entry = stats[name] || {{ count: 0, sp: 0 }};
-        const active = filterAssignee === name ? " active" : "";
-        html += '<button type="button" class="filter-chip' + active + '" data-assignee="' + escapeHtml(name) + '">' +
-          escapeHtml(name) +
-          '<span class="chip-bubbles">' +
-            '<span class="chip-bubble" title="User stories">' + entry.count + '</span>' +
-            '<span class="chip-bubble sp" title="Story points">' + formatSp(entry.sp) + ' SP</span>' +
-          '</span></button>';
+        html += bubbleChip(assigneeFirstName(name), "assignee", name, filterAssignee === name, entry.count, entry.sp, name);
       }});
       container.innerHTML = html;
     }}
 
-    function renderStoryQuickFilters(block) {{
+    function uniqueReqValues(requirements, picker) {{
+      const seen = {{}};
+      requirements.forEach(function (req) {{
+        seen[picker(req)] = true;
+      }});
+      return Object.keys(seen).sort(function (a, b) {{ return a.localeCompare(b); }});
+    }}
+
+    function renderRequirementFilters(block) {{
       if (!block) {{
+        document.getElementById("reqStatusFilters").innerHTML = '<span class="muted-note">—</span>';
+        document.getElementById("reqBuFilters").innerHTML = '<span class="muted-note">—</span>';
+        document.getElementById("reqFixFilters").innerHTML = '<span class="muted-note">—</span>';
         document.getElementById("storyStatusFilters").innerHTML = '<span class="muted-note">—</span>';
-        document.getElementById("storyBuFilters").innerHTML = '<span class="muted-note">—</span>';
         document.getElementById("storyAssigneeFilters").innerHTML = '<span class="muted-note">—</span>';
         return;
       }}
-      const stories = collectSprintStories(block);
-      const statuses = uniqueStoryValues(stories, function (story) {{ return story.status || "—"; }});
-      const bus = uniqueStoryValues(stories, storyBuLabel);
-      if (filterStatus && statuses.indexOf(filterStatus) === -1) filterStatus = "";
-      if (filterBu && bus.indexOf(filterBu) === -1) filterBu = "";
-      renderFilterChipGroup("storyStatusFilters", statuses, filterStatus, "status");
-      renderFilterChipGroup("storyBuFilters", bus, filterBu, "bu");
+      const requirements = block.requirements || [];
+      const statuses = uniqueReqValues(requirements, reqStatusLabel);
+      const bus = uniqueReqValues(requirements, reqBuLabel);
+      const fixes = uniqueReqValues(requirements, reqFixLabel);
+      if (filterReqStatus && statuses.indexOf(filterReqStatus) === -1) filterReqStatus = "";
+      if (filterReqBu && bus.indexOf(filterReqBu) === -1) filterReqBu = "";
+      if (filterReqFix && fixes.indexOf(filterReqFix) === -1) filterReqFix = "";
+      renderFilterChipGroup("reqStatusFilters", statuses, filterReqStatus, "status");
+      renderFilterChipGroup("reqBuFilters", bus, filterReqBu, "bu");
+      renderFilterChipGroup("reqFixFilters", fixes, filterReqFix, "fix");
+      renderStoryStatusFilters(block);
       renderAssigneeFilters(block);
     }}
 
@@ -769,23 +874,6 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
         '<span class="total-value">' + value + '</span>' +
         (subHtml || "") +
       '</div>';
-    }}
-
-    function renderFilterSummary(block) {{
-      const container = document.getElementById("filterSummary");
-      if (!container) return;
-      if (!block) {{
-        container.innerHTML =
-          totalCard("Requirements", "0") +
-          totalCard("User stories", "0") +
-          totalCard("Orphan stories", "0");
-        return;
-      }}
-      const stories = storiesFromBlock(block);
-      container.innerHTML =
-        totalCard("Requirements", String(block.requirement_count)) +
-        totalCard("User stories", String(stories.length)) +
-        totalCard("Orphan stories", String((block.orphan_stories || []).length));
     }}
 
     function sprintStatusKeys(rawBlock) {{
@@ -809,7 +897,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       const stories = storiesFromBlock(block);
       const spSum = sumStoryPoints(stories);
       const spMissing = stories.filter(function (s) {{ return s.story_points == null; }}).length;
-      const filteredNote = (filterStatus || filterBu || filterAssignee) ? " · filtered" : "";
+      const filteredNote = (filterReqStatus || filterReqBu || filterReqFix || filterStoryStatus || filterAssignee) ? " · filtered" : "";
       const missingNote = spMissing
         ? ('<div class="total-sub">' + spMissing + " without SP</div>")
         : "";
@@ -880,10 +968,9 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
 
     function renderSprint() {{
       const rawBlock = getSprintBlock();
-      renderStoryQuickFilters(rawBlock);
+      renderRequirementFilters(rawBlock);
       const block = rawBlock ? filterSprintBlock(rawBlock) : null;
       document.getElementById("sprintTitle").textContent = selectedSprint || "No sprint selected";
-      renderFilterSummary(rawBlock);
       renderSprintTotals(block);
 
       const container = document.getElementById("sprintContent");
@@ -892,7 +979,7 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
         return;
       }}
       if (!block || (!block.requirements.length && !block.orphan_stories.length)) {{
-        container.innerHTML = '<div class="empty-state">No stories match the selected Status / BU / Assigned to filters.</div>';
+        container.innerHTML = '<div class="empty-state">No stories match the selected requirement, story status, or assignee filters.</div>';
         return;
       }}
 
@@ -921,8 +1008,10 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       const btn = event.target.closest(".filter-chip");
       if (!btn) return;
       selectedSprint = btn.dataset.sprint || "";
-      filterStatus = "";
-      filterBu = "";
+      filterReqStatus = "";
+      filterReqBu = "";
+      filterReqFix = "";
+      filterStoryStatus = "";
       filterAssignee = "";
       document.querySelectorAll("#sprintChips .filter-chip").forEach(function (chip) {{
         chip.classList.toggle("active", chip === btn);
@@ -930,17 +1019,31 @@ def generate_html(payload: Dict[str, Any], source: str) -> str:
       renderSprint();
     }});
 
-    document.getElementById("storyStatusFilters").addEventListener("click", function (event) {{
+    document.getElementById("reqStatusFilters").addEventListener("click", function (event) {{
       const btn = event.target.closest(".filter-chip");
       if (!btn) return;
-      filterStatus = btn.dataset.status || "";
+      filterReqStatus = btn.dataset.status || "";
       renderSprint();
     }});
 
-    document.getElementById("storyBuFilters").addEventListener("click", function (event) {{
+    document.getElementById("reqBuFilters").addEventListener("click", function (event) {{
       const btn = event.target.closest(".filter-chip");
       if (!btn) return;
-      filterBu = btn.dataset.bu || "";
+      filterReqBu = btn.dataset.bu || "";
+      renderSprint();
+    }});
+
+    document.getElementById("reqFixFilters").addEventListener("click", function (event) {{
+      const btn = event.target.closest(".filter-chip");
+      if (!btn) return;
+      filterReqFix = btn.dataset.fix || "";
+      renderSprint();
+    }});
+
+    document.getElementById("storyStatusFilters").addEventListener("click", function (event) {{
+      const btn = event.target.closest(".filter-chip");
+      if (!btn) return;
+      filterStoryStatus = btn.dataset.storyStatus || "";
       renderSprint();
     }});
 

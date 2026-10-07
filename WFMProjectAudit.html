@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WFM Project Audit</title>
+  <style>
+    :root {
+      --bg: #0f1419; --surface: #1a2332; --surface-2: #212d3d; --border: #2a3544;
+      --text: #e8edf4; --muted: #8b9cb3; --accent: #4a9eff; --teal: #3dd6c6;
+      --green: #34d399; --gold: #fbbf24; --red: #f87171; --hero-shadow: 0 6px 18px rgba(0,0,0,.25);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", Inter, Arial, sans-serif; font-size: 13px; }
+    .page { max-width: 1680px; margin: 0 auto; padding: 14px 16px 28px; }
+    .hero {
+      background: linear-gradient(135deg, #1f3a5f 0%, #274d78 100%);
+      color: white; border-radius: 14px; padding: 10px 14px; box-shadow: var(--hero-shadow);
+    }
+    .hero-layout { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .hero-main { display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; flex: 1; min-width: 0; }
+    h1 { margin: 0; font-size: 18px; line-height: 1.2; }
+    .hero-sub { margin: 0; font-size: 11px; color: rgba(255,255,255,0.88); line-height: 1.35; max-width: 520px; }
+    .hero-charter-logo {
+      height: 32px; object-fit: contain; background: white; padding: 3px 6px;
+      border-radius: 6px; flex-shrink: 0;
+    }
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; margin: 0; align-items: center; }
+    .nav-links a {
+      font-size: 11px; font-weight: 600; color: var(--accent); text-decoration: none;
+      border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px; background: var(--surface);
+    }
+    .tabs { display: flex; gap: 8px; margin-top: 12px; }
+    .tab {
+      border: 1px solid var(--border); background: var(--surface); color: var(--text);
+      border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
+    }
+    .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .panel {
+      margin-top: 12px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 16px;
+    }
+    .panel h2 { margin: 0 0 6px; font-size: 14px; }
+    .note { color: var(--muted); font-size: 12px; line-height: 1.45; margin: 0 0 12px; }
+    .release-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 900px) { .release-grid { grid-template-columns: 1fr; } }
+    .release-card {
+      border: 1px solid rgba(74,158,255,.4); border-radius: 10px; background: rgba(15,20,25,.22); padding: 12px;
+    }
+    .release-card h3 { margin: 0; font-size: 16px; }
+    .window { color: var(--muted); font-size: 12px; margin: 4px 0 10px; }
+    .chart-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 12px; margin-bottom: 12px; }
+    @media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } }
+    .chart-tile {
+      border: 1px solid rgba(74,158,255,.4); border-radius: 10px;
+      background: rgba(15,20,25,.22); padding: 12px 14px; min-width: 0;
+    }
+    .chart-tile h3 { margin: 0 0 8px; font-size: 13px; }
+    .chart-legend { display: flex; flex-wrap: wrap; gap: 10px 14px; margin-bottom: 8px; }
+    .chart-legend span { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; font-weight: 700; }
+    .swatch { width: 14px; height: 8px; border-radius: 99px; display: inline-block; }
+    .swatch.line { height: 0; border-top: 2px dashed currentColor; border-radius: 0; width: 16px; background: transparent; }
+    .chart-tile svg { width: 100%; height: auto; display: block; }
+    .kpis { display: flex; flex-wrap: wrap; gap: 8px; }
+    .kpi {
+      background: var(--surface-2); border: 1px solid rgba(74,158,255,.35); border-radius: 10px;
+      padding: 6px 12px; min-width: 110px;
+    }
+    .kpi span { display: block; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+    .kpi strong { font-size: 16px; }
+    .compare { margin-top: 12px; }
+    .compare-row { display: grid; grid-template-columns: 92px 1fr 72px; gap: 8px; align-items: center; margin-top: 6px; }
+    .compare-label { font-size: 11px; color: var(--muted); }
+    .track { height: 8px; border-radius: 999px; background: #121820; overflow: hidden; }
+    .fill { height: 100%; border-radius: 999px; }
+    .fill.expected { background: var(--accent); }
+    .fill.actual { background: var(--green); }
+    .fill.behind { background: var(--gold); }
+    .section-title { margin: 16px 0 8px; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+    td a { color: var(--accent); text-decoration: none; font-weight: 700; }
+    .short { color: var(--gold); font-weight: 700; }
+    .ok { color: var(--green); font-weight: 700; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .chip {
+      border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+      border-radius: 999px; padding: 6px 12px; font-size: 11px; font-weight: 700; cursor: pointer;
+    }
+    .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .funnel { display: flex; flex-direction: column; align-items: center; gap: 6px; max-width: 760px; margin: 0 auto; }
+    .funnel-stage {
+      min-width: 220px; display: flex; align-items: center; justify-content: center;
+      padding: 11px 18px; color: #fff; font-weight: 700; text-align: center;
+      clip-path: polygon(0 0, 100% 0, calc(100% - var(--taper, 5%)) 100%, var(--taper, 5%) 100%);
+    }
+    .funnel-stage .label { font-size: 14px; line-height: 1.2; white-space: nowrap; }
+    .funnel-0 { background: #3d5270; }
+    .funnel-1 { background: #3a6494; }
+    .funnel-2 { background: #2f78b8; }
+    .funnel-3 { background: #2a8f9a; }
+    .funnel-4 { background: #248f78; }
+    .funnel-5 { background: #1d8a56; }
+    .hidden { display: none; }
+    #gate {
+      position: fixed; inset: 0; z-index: 9999; background: #0d1b2e;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .gate-box { text-align: center; width: 340px; }
+    .gate-logo { font-size: 13px; font-weight: 700; letter-spacing: 2px; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 32px; }
+    .gate-logo span { color: #e8712a; }
+    .gate-box h2 { font-size: 22px; font-weight: 700; color: #fff; margin: 0 0 6px; }
+    .gate-box p { font-size: 13px; color: rgba(255,255,255,0.5); margin: 0 0 28px; line-height: 1.5; }
+    .gate-box input {
+      width: 100%; padding: 13px 16px; background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; color: #fff; font-size: 15px; outline: none;
+    }
+    .gate-btn { width: 100%; margin-top: 14px; padding: 13px; background: #e8712a; border: none; border-radius: 8px; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .gate-error { font-size: 12px; color: #f4a261; margin-top: 10px; min-height: 18px; }
+  </style>
+</head>
+<body>
+  <div id="gate">
+    <form class="gate-box" id="gate-form">
+      <div class="gate-logo">Charter &times; PwC &nbsp;<span>&#9679;</span>&nbsp; WFM Global Design</div>
+      <h2>Project Audit</h2>
+      <p>Enter the audit passphrase to open<br />this page.</p>
+      <input id="gate-input" type="password" placeholder="Enter passphrase" autocomplete="off" />
+      <button class="gate-btn" type="submit">Enter</button>
+      <div class="gate-error" id="gate-error"></div>
+    </form>
+  </div>
+
+  <div class="page">
+    <section class="hero">
+      <div class="hero-layout">
+        <div class="hero-main">
+          <h1>Project Audit</h1>
+          <div class="hero-sub">Requirement release progress and sprint ownership. Completed means status Completed.</div>
+          <div class="nav-links">
+            <a href="WFMSprintProgress.html">Sprint Progress</a>
+            <a href="index.html">Project Hub</a>
+          </div>
+          <div class="hero-sub" id="refreshedAt"></div>
+        </div>
+        <img class="hero-charter-logo" src="https://corporate.charter.com/static/d617519f6e8ec1333149b2e86dd914fb/58aae/Charter_Communications_Logo_Preview_0.jpg" alt="Charter" />
+      </div>
+    </section>
+
+    <div class="tabs">
+      <button type="button" class="tab active" data-tab="requirements">Requirements</button>
+      <button type="button" class="tab" data-tab="sprint">Sprint</button>
+    </div>
+
+    <div id="tab-requirements">
+      <div class="panel">
+        <h2>Requirements by status</h2>
+        <p class="note">Top to bottom: Not Started, Pending Approval, Acknowledge, In Progress, In Review, Completed.</p>
+        <div class="funnel" id="statusFunnel"></div>
+        <p class="note" id="funnelOther" style="margin-top:12px;margin-bottom:0;"></p>
+      </div>
+      <div class="panel">
+        <h2>Release progress</h2>
+        <p class="note">Expected progress is the share of the release window that has elapsed, applied to the total requirement story points. Actual progress is the story points on requirements whose status is Completed.</p>
+        <div class="release-grid" id="releaseGrid"></div>
+        <p class="note" id="outsideNote" style="margin-top:12px;margin-bottom:0;"></p>
+      </div>
+      <div class="panel">
+        <h2>Requirements owned by more than one person</h2>
+        <p class="note">Each requirement should have one assignee on all of its user stories.</p>
+        <div id="sharedOwners"></div>
+      </div>
+    </div>
+
+    <div id="tab-sprint" class="hidden">
+      <div class="chart-grid">
+        <section class="chart-tile">
+          <h3>SP assigned, complete, and trend</h3>
+          <div class="chart-legend">
+            <span><i class="swatch" style="background:#4a9eff"></i>SP assigned</span>
+            <span><i class="swatch" style="background:#34d399"></i>SP complete</span>
+            <span style="color:#93c5fd"><i class="swatch line"></i>Assigned trend</span>
+            <span style="color:#6ee7b7"><i class="swatch line"></i>Complete trend</span>
+          </div>
+          <div id="sprintCompareChart"></div>
+        </section>
+        <section class="chart-tile">
+          <h3>SP complete per sprint</h3>
+          <div class="chart-legend">
+            <span><i class="swatch" style="background:#34d399"></i>SP complete</span>
+            <span style="color:#6ee7b7"><i class="swatch line"></i>Trend</span>
+          </div>
+          <div id="sprintCompleteChart"></div>
+        </section>
+      </div>
+      <div class="panel">
+        <h2>Sprint ownership</h2>
+        <p class="note">Each assignee is expected to carry at least 20 story points in the selected sprint. Complete counts stories whose status is Completed.</p>
+        <div class="chips" id="sprintChips"></div>
+        <div class="kpis" id="sprintKpis"></div>
+        <h3 class="section-title">Assignees</h3>
+        <div id="assigneeTable"></div>
+        <h3 class="section-title">User stories</h3>
+        <div id="storyTable"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const JIRA_FALLBACK = "https://pwc-us-adv-cc-9cf57793.atlassian.net";
+    let AUDIT = null;
+    let selectedSprint = "";
+
+    function escapeHtml(value) {
+      return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function formatSp(value) {
+      const number = Number(value);
+      if (!isFinite(number)) return "0";
+      const rounded = Math.round(number * 10) / 10;
+      return String(rounded).replace(/\.0$/, "");
+    }
+
+    function parseDay(iso) {
+      const parts = String(iso || "").split("-").map(Number);
+      return new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1);
+    }
+
+    function formatDay(iso) {
+      return parseDay(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    }
+
+    function expectedFraction(startIso, endIso) {
+      const start = parseDay(startIso);
+      const end = parseDay(endIso);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (today.getTime() <= start.getTime()) return 0;
+      const total = end.getTime() - start.getTime();
+      if (total <= 0 || today.getTime() >= end.getTime()) return 1;
+      return (today.getTime() - start.getTime()) / total;
+    }
+
+    function issueLink(key) {
+      const base = (AUDIT && AUDIT.jira_base) || JIRA_FALLBACK;
+      return base + "/browse/" + encodeURIComponent(key);
+    }
+
+    function kpi(label, value) {
+      return '<div class="kpi"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(value) + '</strong></div>';
+    }
+
+    function barRow(label, fraction, kind) {
+      const pct = Math.max(0, Math.min(100, Math.round(fraction * 100)));
+      return '<div class="compare-row"><div class="compare-label">' + escapeHtml(label) + '</div>' +
+        '<div class="track"><div class="fill ' + kind + '" style="width:' + pct + '%"></div></div>' +
+        '<div>' + pct + '%</div></div>';
+    }
+
+    function renderFunnel() {
+      const funnel = (AUDIT && AUDIT.status_funnel) || { stages: [], other: [] };
+      const stages = funnel.stages || [];
+      document.getElementById("statusFunnel").innerHTML = stages.map(function (stage, index) {
+        const width = 100 - index * 10;
+        // Bottom edge of each band matches the top of the next band, which is 10 points narrower.
+        const taper = (5 / width * 100).toFixed(2) + "%";
+        return '<div class="funnel-stage funnel-' + index + '" style="width:' + width + '%;--taper:' + taper + '">' +
+          '<span class="label">' + escapeHtml(stage.label) + ' : ' + (stage.count || 0) + '</span></div>';
+      }).join("");
+      const other = funnel.other || [];
+      const otherNote = document.getElementById("funnelOther");
+      if (!other.length) {
+        otherNote.textContent = "";
+        return;
+      }
+      const total = other.reduce(function (sum, item) { return sum + item.count; }, 0);
+      otherNote.textContent = total + " requirements are outside this funnel: " +
+        other.map(function (item) { return item.label + " (" + item.count + ")"; }).join(", ") + ".";
+    }
+
+    function renderReleases() {
+      const grid = document.getElementById("releaseGrid");
+      grid.innerHTML = (AUDIT.releases || []).map(function (release) {
+        const fraction = expectedFraction(release.start, release.end);
+        const expectedSp = release.total_sp * fraction;
+        const actualFraction = release.total_sp > 0 ? release.completed_sp / release.total_sp : 0;
+        const behind = release.completed_sp + 0.001 < expectedSp;
+        return '<article class="release-card">' +
+          '<h3>' + escapeHtml(release.label) + '</h3>' +
+          '<div class="window">' + formatDay(release.start) + ' – ' + formatDay(release.end) + '</div>' +
+          '<div class="kpis">' +
+            kpi("Requirements", String(release.requirement_count)) +
+            kpi("Total SP", formatSp(release.total_sp)) +
+            kpi("Completed", String(release.completed_count)) +
+            kpi("Completed SP", formatSp(release.completed_sp)) +
+            kpi("Expected SP", formatSp(expectedSp)) +
+          '</div>' +
+          '<div class="compare">' +
+            barRow("Schedule", fraction, "expected") +
+            barRow("SP complete", actualFraction, behind ? "behind" : "actual") +
+          '</div>' +
+          '<p class="note" style="margin:10px 0 0;">' +
+            formatSp(release.completed_sp) + ' SP completed versus ' + formatSp(expectedSp) +
+            ' SP expected for this point in the release. ' +
+            (release.sp_missing ? (release.sp_missing + ' requirements have no story points.') : '') +
+          '</p></article>';
+      }).join("");
+      const outside = AUDIT.outside_release || { requirement_count: 0, total_sp: 0 };
+      document.getElementById("outsideNote").textContent =
+        outside.requirement_count + " requirements (" + formatSp(outside.total_sp) +
+        " SP) are not on R1 or R2.";
+    }
+
+    function renderSharedOwners() {
+      const rows = AUDIT.shared_owner_requirements || [];
+      const host = document.getElementById("sharedOwners");
+      if (!rows.length) {
+        host.innerHTML = '<p class="note">Every requirement with stories has a single story assignee.</p>';
+        return;
+      }
+      host.innerHTML = '<table><thead><tr><th>Requirement</th><th>Status</th><th>Fix</th><th>Stories</th><th>Assignees</th></tr></thead><tbody>' +
+        rows.map(function (req) {
+          const people = (req.assignees || []).map(function (person) {
+            return escapeHtml(person.name) + " (" + person.stories + ", " + formatSp(person.sp) + " SP)";
+          }).join("<br>");
+          return '<tr><td><a href="' + issueLink(req.key) + '" target="_blank" rel="noopener noreferrer">' +
+            escapeHtml(req.key) + '</a><div>' + escapeHtml(req.summary) + '</div></td>' +
+            '<td>' + escapeHtml(req.status || "—") + '</td>' +
+            '<td>' + escapeHtml(req.fix_versions || "—") + '</td>' +
+            '<td>' + req.story_count + '</td><td>' + people + '</td></tr>';
+        }).join("") +
+        '</tbody></table>';
+    }
+
+    function selectedSprintBlock() {
+      return (AUDIT.sprints || []).find(function (sprint) { return sprint.name === selectedSprint; }) || null;
+    }
+
+    function sprintAxisLabel(name) {
+      const match = String(name || "").match(/(\d+)\s*$/);
+      return match ? match[1] : String(name || "");
+    }
+
+    function niceMax(value) {
+      if (value <= 0) return 10;
+      const power = Math.pow(10, Math.floor(Math.log10(value)));
+      const scaled = value / power;
+      const nice = scaled <= 1 ? 1 : scaled <= 2 ? 2 : scaled <= 5 ? 5 : 10;
+      return nice * power;
+    }
+
+    function renderBarChart(host, sprints, series, maxValue) {
+      if (!host) return;
+      if (!sprints.length) {
+        host.innerHTML = '<p class="note">No sprints to chart.</p>';
+        return;
+      }
+      const padL = 46;
+      const padR = 12;
+      const padT = 16;
+      const padB = 36;
+      const width = 640;
+      const height = 250;
+      const plotW = width - padL - padR;
+      const plotH = height - padT - padB;
+      const max = niceMax(maxValue);
+      const baseline = padT + plotH;
+      function yOf(value) { return baseline - (Math.max(0, value) / max) * plotH; }
+      const slot = plotW / sprints.length;
+      const barW = Math.max(8, Math.min(22, (slot - 24) / series.length));
+      const groupW = series.length * barW + Math.max(0, series.length - 1) * 4;
+      let marks = "";
+      for (let tick = 0; tick <= 4; tick += 1) {
+        const value = max * tick / 4;
+        const y = yOf(value);
+        marks += '<line x1="' + padL + '" y1="' + y + '" x2="' + (width - padR) + '" y2="' + y + '" stroke="#2a3544" stroke-width="1"/>';
+        marks += '<text x="' + (padL - 8) + '" y="' + (y + 3) + '" fill="#8b9cb3" font-size="10" text-anchor="end">' + formatSp(value) + '</text>';
+      }
+      const trends = series.map(function () { return []; });
+      sprints.forEach(function (sprint, index) {
+        const center = padL + slot * index + slot / 2;
+        const groupLeft = center - groupW / 2;
+        marks += '<text x="' + center + '" y="' + (baseline + 16) + '" fill="#e8edf4" font-size="11" font-weight="700" text-anchor="middle">' + escapeHtml(sprintAxisLabel(sprint.name)) + '</text>';
+        series.forEach(function (item, seriesIndex) {
+          const value = Number(sprint[item.key]) || 0;
+          const y = yOf(value);
+          const x = groupLeft + seriesIndex * (barW + 4);
+          const barH = Math.max(0, baseline - y);
+          marks += '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + barH + '" rx="3" fill="' + item.color + '"/>';
+          if (value > 0) {
+            marks += '<text x="' + (x + barW / 2) + '" y="' + (y - 4) + '" fill="#e8edf4" font-size="10" text-anchor="middle">' + formatSp(value) + '</text>';
+          }
+          trends[seriesIndex].push((x + barW / 2) + "," + y);
+        });
+      });
+      series.forEach(function (item, seriesIndex) {
+        if (!item.trend || trends[seriesIndex].length < 2) return;
+        marks += '<polyline points="' + trends[seriesIndex].join(" ") + '" fill="none" stroke="' + item.trend + '" stroke-width="1.5" stroke-dasharray="4 3"/>';
+      });
+      const axisTitleY = padT + plotH / 2;
+      marks += '<text x="12" y="' + axisTitleY + '" fill="#8b9cb3" font-size="10" text-anchor="middle" transform="rotate(-90 12 ' + axisTitleY + ')">Story points</text>';
+      marks += '<text x="' + (padL + plotW / 2) + '" y="' + (height - 6) + '" fill="#8b9cb3" font-size="10" text-anchor="middle">Sprint</text>';
+      host.innerHTML = '<svg viewBox="0 0 ' + width + ' ' + height + '" role="img">' + marks + '</svg>';
+    }
+
+    function renderSprintCharts() {
+      const sprints = (AUDIT && AUDIT.sprints) || [];
+      const maxAssigned = sprints.reduce(function (max, sprint) {
+        return Math.max(max, Number(sprint.assigned_sp) || 0, Number(sprint.complete_sp) || 0);
+      }, 0);
+      const maxComplete = sprints.reduce(function (max, sprint) {
+        return Math.max(max, Number(sprint.complete_sp) || 0);
+      }, 0);
+      renderBarChart(document.getElementById("sprintCompareChart"), sprints, [
+        { key: "assigned_sp", color: "#4a9eff", trend: "#93c5fd" },
+        { key: "complete_sp", color: "#34d399", trend: "#6ee7b7" }
+      ], maxAssigned);
+      renderBarChart(document.getElementById("sprintCompleteChart"), sprints, [
+        { key: "complete_sp", color: "#34d399", trend: "#6ee7b7" }
+      ], maxComplete);
+    }
+
+    function renderSprint() {
+      renderSprintCharts();
+      const block = selectedSprintBlock();
+      const chips = document.getElementById("sprintChips");
+      chips.innerHTML = (AUDIT.sprints || []).map(function (sprint) {
+        const active = sprint.name === selectedSprint ? " active" : "";
+        return '<button type="button" class="chip' + active + '" data-sprint="' + escapeHtml(sprint.name) + '">' +
+          escapeHtml(sprint.name) + ' (' + sprint.story_count + ')</button>';
+      }).join("");
+      if (!block) {
+        document.getElementById("sprintKpis").innerHTML = "";
+        document.getElementById("assigneeTable").innerHTML = '<p class="note">No sprint is selected.</p>';
+        document.getElementById("storyTable").innerHTML = "";
+        return;
+      }
+      const target = AUDIT.assignee_sp_target || 20;
+      document.getElementById("sprintKpis").innerHTML =
+        kpi("Stories", String(block.story_count)) +
+        kpi("Assigned SP", formatSp(block.assigned_sp)) +
+        kpi("Complete", String(block.complete_stories)) +
+        kpi("Complete SP", formatSp(block.complete_sp)) +
+        kpi("Under " + target + " SP", String(block.assignees_under_target));
+      document.getElementById("assigneeTable").innerHTML =
+        '<table><thead><tr><th>Assignee</th><th>Stories</th><th>SP assigned</th><th>Complete</th><th>Complete SP</th><th>Vs ' +
+        target + ' SP</th></tr></thead><tbody>' +
+        (block.assignees || []).map(function (person) {
+          const mark = person.meets_target
+            ? '<span class="ok">Meets ' + target + '</span>'
+            : '<span class="short">Short ' + formatSp(person.short_sp) + ' SP</span>';
+          return '<tr><td>' + escapeHtml(person.name) + '</td><td>' + person.stories + '</td><td>' +
+            formatSp(person.sp) + '</td><td>' + person.complete_stories + '</td><td>' +
+            formatSp(person.complete_sp) + '</td><td>' + mark + '</td></tr>';
+        }).join("") +
+        '</tbody></table>';
+      document.getElementById("storyTable").innerHTML =
+        '<table><thead><tr><th>Story</th><th>Assignee</th><th>SP</th><th>Status</th><th>Complete</th></tr></thead><tbody>' +
+        (block.stories || []).map(function (story) {
+          return '<tr><td><a href="' + issueLink(story.key) + '" target="_blank" rel="noopener noreferrer">' +
+            escapeHtml(story.key) + '</a><div>' + escapeHtml(story.summary) + '</div></td><td>' +
+            escapeHtml(story.assignee) + '</td><td>' + (story.story_points == null ? "—" : formatSp(story.story_points)) +
+            '</td><td>' + escapeHtml(story.status || "—") + '</td><td>' + (story.complete ? "Yes" : "No") + '</td></tr>';
+        }).join("") +
+        '</tbody></table>';
+    }
+
+    function renderAudit() {
+      const stamp = AUDIT.generated_at ? new Date(AUDIT.generated_at) : null;
+      document.getElementById("refreshedAt").textContent = stamp && !isNaN(stamp.getTime())
+        ? ("Data as of " + stamp.toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }))
+        : "";
+      if (!selectedSprint && AUDIT.sprints && AUDIT.sprints.length) selectedSprint = AUDIT.sprints[0].name;
+      renderFunnel();
+      renderReleases();
+      renderSharedOwners();
+      renderSprint();
+    }
+
+    document.getElementById("gate-form").addEventListener("submit", function (event) {
+      event.preventDefault();
+      const input = document.getElementById("gate-input");
+      const err = document.getElementById("gate-error");
+      err.textContent = "";
+      fetch("/api/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passphrase: (input.value || "").trim() })
+      }).then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      }).then(function (result) {
+        if (!result.ok || !result.data || !result.data.audit) {
+          err.textContent = (result.data && result.data.error) || "Incorrect passphrase.";
+          return;
+        }
+        AUDIT = result.data.audit;
+        document.getElementById("gate").style.display = "none";
+        renderAudit();
+      }).catch(function () {
+        err.textContent = "The audit service did not respond.";
+      });
+    });
+
+    document.querySelector(".tabs").addEventListener("click", function (event) {
+      const btn = event.target.closest(".tab");
+      if (!btn || !AUDIT) return;
+      document.querySelectorAll(".tab").forEach(function (tab) { tab.classList.toggle("active", tab === btn); });
+      document.getElementById("tab-requirements").classList.toggle("hidden", btn.dataset.tab !== "requirements");
+      document.getElementById("tab-sprint").classList.toggle("hidden", btn.dataset.tab !== "sprint");
+    });
+
+    document.getElementById("sprintChips").addEventListener("click", function (event) {
+      const btn = event.target.closest(".chip");
+      if (!btn) return;
+      selectedSprint = btn.dataset.sprint || "";
+      renderSprint();
+    });
+  </script>
+</body>
+</html>

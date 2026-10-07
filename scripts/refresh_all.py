@@ -22,6 +22,7 @@ def main() -> None:
     run([python, os.path.join(_SCRIPT_DIR, "build_estimates_dashboard.py"), "--input", _CSV])
     run([python, os.path.join(_SCRIPT_DIR, "build_requirements_executive.py"), "--input", _CSV])
     run([python, os.path.join(_SCRIPT_DIR, "build_sprint_progress.py"), "--input", _CSV])
+    run([python, os.path.join(_SCRIPT_DIR, "build_project_audit.py"), "--input", _CSV])
     print("Refresh complete.", flush=True)
 
 
