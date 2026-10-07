@@ -23,7 +23,6 @@ _DEFAULT_CSV = bed._DEFAULT_CSV
 JIRA_BASE = bed.JIRA_BASE
 
 SPRINT_COL = "Sprint (customfield_10020)"
-LINKED_COL = "Linked Issues"
 SP_COL = "Story Points (customfield_10038)"
 SP_EST_COL = "Story point estimate (customfield_10016)"
 BU_COL = "Business Unit(s) (customfield_10099)"
@@ -66,7 +65,7 @@ def sprint_sort_key(name: str) -> tuple:
 
 
 def parent_requirement_key(row: Dict[str, str], by_key: Dict[str, Dict[str, str]]) -> Optional[str]:
-    raw = row.get(LINKED_COL) or ""
+    raw = bed.linked_issues_raw(row)
     if not raw:
         return None
     for part in raw.split('"name": "Parent-Child"')[1:]:

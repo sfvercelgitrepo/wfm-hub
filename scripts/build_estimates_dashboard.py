@@ -59,6 +59,16 @@ FILTER_EXCLUDE_KEYS = {
 }
 DATE_KEYS = {"created", "updated", "due_date"}
 JIRA_BASE = "https://pwc-us-adv-cc-9cf57793.atlassian.net"
+# Jira renamed this field from "Linked Issues" to "Linked work items".
+LINKED_ISSUE_COLUMNS = ("Linked Issues", "Linked work items")
+
+
+def linked_issues_raw(row: Dict[str, str]) -> str:
+    for column in LINKED_ISSUE_COLUMNS:
+        raw = row.get(column) or ""
+        if raw.strip():
+            return raw
+    return ""
 
 
 def parse_args() -> argparse.Namespace:
@@ -242,7 +252,7 @@ def enrich_epic_names(issues: List[Dict[str, Any]], all_rows: List[Dict[str, str
                 epic_link = parent
         if not epic_link:
             source_row = by_key.get(str(issue.get("issue_key") or "").strip(), {})
-            epic_link = _epic_key_from_linked_issues(source_row.get("Linked Issues", ""), row_types)
+            epic_link = _epic_key_from_linked_issues(linked_issues_raw(source_row), row_types)
         if epic_link:
             issue["epic_link"] = epic_link
         resolved = key_to_summary.get(epic_link, "")
@@ -320,7 +330,7 @@ def build_wbs_graph(all_rows: List[Dict[str, str]]) -> Tuple[Dict[str, set], Dic
         parent = clean_text(row.get("Parent", ""))
         if parent:
             add_child(parent, key)
-        for obj_str in _split_json_objects(row.get("Linked Issues", "")):
+        for obj_str in _split_json_objects(linked_issues_raw(row)):
             try:
                 obj = json.loads(obj_str)
             except json.JSONDecodeError:
